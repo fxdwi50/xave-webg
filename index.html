@@ -3,764 +3,356 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebG - Universal 3D Code to 4K Video Studio</title>
+    <title>WebG Studio - 3D Microstock Generator</title>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- CCapture.js untuk merekam Canvas WebGL frame-by-frame -->
-    <script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js & CCapture Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/spite/ccapture.js@v1.0.9/build/CCapture.all.min.js"></script>
+
     <style>
-        body {
-            background-color: #0d1117;
-            color: #c9d1d9;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        /* Mencegah overflow & Memastikan Layout Responsif Fleksibel */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0f172a;
+            color: #f8fafc;
         }
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+
+        /* Container Flex Utama */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
         }
-        ::-webkit-scrollbar-track {
-            background: #161b22;
+
+        /* Column Editor & Form Layout */
+        .sidebar-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #30363d;
-            border-radius: 4px;
+
+        /* Sticky Header untuk Editor agar tidak pernah hilang saat dipaste */
+        .editor-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #1e293b;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #484f58;
+
+        /* Area Canvas Preview */
+        .preview-panel {
+            position: relative;
+            flex: 1;
+            height: 100%;
+            background: #000;
+        }
+
+        #webgl-canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        /* Watermark / Overlay info */
+        .render-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
         }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col overflow-hidden">
+<body>
 
-    <!-- Header Navigation -->
-    <header class="h-14 bg-gray-900 border-b border-gray-800 px-6 flex items-center justify-between shrink-0 z-20">
-        <div class="flex items-center space-x-3 shrink-0">
-            <div class="p-2 bg-blue-600 rounded-lg text-white">
-                <i data-lucide="clapperboard" class="w-5 h-5"></i>
+<div class="app-container">
+    <!-- PANEL KIRI: EDITOR & METADATA -->
+    <div class="w-full md:w-5/12 lg:w-4/12 sidebar-panel bg-slate-900 border-r border-slate-800 p-4 space-y-4">
+        
+        <!-- Header Brand -->
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h1 class="text-xl font-bold text-indigo-400"><i class="fa-solid fa-cube mr-2"></i>WebG Studio</h1>
+            <span class="text-xs bg-indigo-900/50 text-indigo-300 px-2 py-1 rounded">Auto-Render Active</span>
+        </div>
+
+        <!-- CODE EDITOR CONTAINER -->
+        <div class="flex flex-col rounded-lg border border-slate-700 bg-slate-950 overflow-hidden">
+            <div class="editor-header flex justify-between items-center px-3 py-2 border-b border-slate-800">
+                <span class="text-xs font-semibold text-slate-400"><i class="fa-solid fa-code mr-1"></i> Three.js / WebGL Code</span>
+                <span id="status-tag" class="text-xs text-emerald-400 font-mono">Live Sync</span>
             </div>
+            
+            <!-- TextArea Editor -->
+            <textarea id="code-editor" class="w-full h-48 bg-slate-950 text-emerald-400 font-mono text-xs p-3 focus:outline-none resize-y" placeholder="Paste kode Three.js / HTML 3D Anda di sini..."></textarea>
+        </div>
+
+        <!-- METADATA AUTO-EXTRACT -->
+        <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700 space-y-3">
+            <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-tags mr-1"></i> Microstock Metadata</h2>
+            
             <div>
-                <h1 class="text-base font-bold text-white tracking-wide flex items-center gap-2">
-                    WebG Studio <span class="bg-blue-900/60 text-blue-400 text-xs px-2 py-0.5 rounded border border-blue-700/50">4K Renderer</span>
-                </h1>
+                <label class="block text-xs text-slate-400 mb-1">Judul Video (Title)</label>
+                <input type="text" id="meta-title" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder="Otomatis dari kode...">
+            </div>
+
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Deskripsi</label>
+                <textarea id="meta-desc" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder="Otomatis dari kode..."></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Keywords Utama</label>
+                <input type="text" id="meta-keywords" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder="Otomatis dari kode...">
             </div>
         </div>
 
-        <div class="flex items-center space-x-3 shrink-0">
-            <button id="renderBtn" class="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-medium text-xs py-2 px-4 rounded-lg transition flex items-center gap-2 shadow-lg shadow-blue-900/20">
-                <i data-lucide="video" class="w-4 h-4"></i>
-                <span>Render Video</span>
+        <!-- CONTROL & PRESET SETTINGS -->
+        <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700 space-y-3">
+            <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-sliders mr-1"></i> Controls & Movement Preset</h2>
+            
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Preset Gerakan</label>
+                    <select id="preset-motion" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none">
+                        <option value="none">Tanpa Preset (Default Kode)</option>
+                        <option value="orbit">Slow Orbit Rotate</option>
+                        <option value="bounce">Floating Pulse</option>
+                        <option value="zoom">Slow Zoom In-Out</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Export Resolution</label>
+                    <select id="render-res" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none">
+                        <option value="1080">Full HD (1080p)</option>
+                        <option value="2160">4K UHD (2160p)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- EXPORT RENDER BUTTON -->
+            <button id="export-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 rounded-lg shadow-lg transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-film"></i>
+                <span>Render Video Microstock</span>
             </button>
         </div>
-    </header>
 
-    <!-- Main Workspace -->
-    <div class="flex-grow flex flex-col md:flex-row overflow-hidden min-h-0">
-
-        <!-- Column 1: Code Editor Input -->
-        <section class="w-full md:w-1/3 bg-gray-950 border-r border-gray-800 flex flex-col shrink-0 h-full overflow-hidden min-h-0">
-            <div class="p-3 bg-gray-900 border-b border-gray-800 flex items-center justify-between shrink-0 z-10">
-                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <i data-lucide="code-2" class="w-4 h-4 text-blue-400"></i> Code Editor (HTML / Three.js)
-                </span>
-                <button id="resetCodeBtn" class="text-xs text-gray-400 hover:text-white flex items-center gap-1">
-                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset Default
-                </button>
-            </div>
-            <textarea id="codeEditor" spellcheck="false" class="flex-grow w-full bg-gray-950 p-4 text-emerald-400 font-mono text-xs focus:outline-none resize-none leading-relaxed overflow-y-auto min-h-0 h-full" placeholder="Paste kode HTML/Three.js kamu di sini..."></textarea>
-        </section>
-
-        <!-- Column 2: Interactive Preview Window -->
-        <section class="flex-grow bg-black flex flex-col relative overflow-hidden">
-            <div class="p-2 bg-gray-900/80 border-b border-gray-800 flex items-center justify-between text-xs text-gray-400 px-4 absolute top-0 left-0 right-0 z-10 backdrop-blur-sm">
-                <span class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live Viewport Preview
-                </span>
-                <span id="viewportResolution" class="text-gray-500 font-mono">16:9 Landscape</span>
-            </div>
-
-            <!-- Frame Container (Dynamic Aspect Ratio Box) -->
-            <div class="w-full h-full flex items-center justify-center p-6 pt-12">
-                <div id="iframeWrapper" class="transition-all duration-300 max-w-full max-h-full flex items-center justify-center bg-black rounded-lg border border-gray-800 overflow-hidden shadow-2xl relative aspect-video w-full">
-                    <iframe id="previewIframe" class="w-full h-full border-none bg-black"></iframe>
-                </div>
-            </div>
-
-            <!-- Overlay Progress Rendering Video -->
-            <div id="renderOverlay" class="hidden absolute inset-0 bg-gray-950/90 backdrop-blur-md flex flex-col items-center justify-center z-30 p-6 space-y-4">
-                <div class="p-4 bg-blue-600/20 text-blue-400 rounded-full border border-blue-500/30 animate-pulse">
-                    <i data-lucide="film" class="w-8 h-8"></i>
-                </div>
-                <div class="text-center">
-                    <h3 class="text-lg font-bold text-white mb-1">Merekam Video Frame-by-Frame</h3>
-                    <p id="renderStatusText" class="text-xs text-gray-400">Memproses frame animasi...</p>
-                </div>
-                <div class="w-80 bg-gray-800 rounded-full h-3 overflow-hidden border border-gray-700">
-                    <div id="progressBar" class="bg-blue-500 h-full w-0 transition-all duration-100"></div>
-                </div>
-                <span id="renderPercent" class="text-sm font-mono font-bold text-blue-400">0%</span>
-            </div>
-        </section>
-
-        <!-- Column 3: Render & Settings -->
-        <section class="w-full md:w-80 bg-gray-900 border-l border-gray-800 p-5 flex flex-col justify-between shrink-0 overflow-y-auto">
-            <div class="space-y-5">
-                <!-- Tab Controls for Settings & Microstock Metadata -->
-                <div class="flex border-b border-gray-800 pb-2 space-x-2">
-                    <button id="tabSettingsBtn" class="flex-1 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500 flex items-center justify-center gap-1.5 transition">
-                        <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Video
-                    </button>
-                    <button id="tabMetadataBtn" class="flex-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 transition">
-                        <i data-lucide="tags" class="w-3.5 h-3.5"></i> Microstock Meta
-                    </button>
-                </div>
-
-                <!-- Section Panel 1: Video Settings -->
-                <div id="panelSettings" class="space-y-4">
-                    <!-- Pilihan Aspek Rasio (Ukuran Video) -->
-                    <div>
-                        <label class="text-xs font-medium text-gray-300 block mb-1.5">Aspek Rasio / Ukuran Layout</label>
-                        <select id="aspectRatio" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="16:9" selected>16:9 Landscape (YouTube / Desktop)</option>
-                            <option value="9:16">9:16 Portrait (TikTok / Shorts / Reels)</option>
-                            <option value="1:1">1:1 Square (Instagram Feed)</option>
-                        </select>
-                    </div>
-
-                    <!-- Pilihan Preset Animasi -->
-                    <div>
-                        <label class="text-xs font-medium text-gray-300 block mb-1.5">Preset Gerakan Animasi</label>
-                        <select id="animationPreset" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="none">Bawaan Script (Tanpa Override)</option>
-                            <option value="rotationY" selected>Rotasi Y (Bumi / Planet / Logo)</option>
-                            <option value="turntable">Turntable 360° (Orbit Kamera)</option>
-                            <option value="floating">Melayang Naik-Turun (Floating)</option>
-                            <option value="pulse">Zoom Pulse (Membesar-Mengecil)</option>
-                        </select>
-                    </div>
-
-                    <!-- Pilihan Resolusi -->
-                    <div>
-                        <label class="text-xs font-medium text-gray-300 block mb-1.5">Resolusi Video Target</label>
-                        <select id="resolution" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <!-- Pilihan resolusi terisi otomatis via JS sesuai Aspek Rasio -->
-                        </select>
-                    </div>
-
-                    <!-- Input Durasi (Detik) & FPS -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-xs font-medium text-gray-300 block mb-1.5">Durasi (Detik)</label>
-                            <input type="number" id="duration" value="10" min="1" max="300" step="1" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono" placeholder="Ketik detik...">
-                        </div>
-                        <div>
-                            <label class="text-xs font-medium text-gray-300 block mb-1.5">Frame Rate (FPS)</label>
-                            <select id="fps" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                <option value="30">30 FPS</option>
-                                <option value="60" selected>60 FPS</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Format Output -->
-                    <div>
-                        <label class="text-xs font-medium text-gray-300 block mb-1.5">Format File Output</label>
-                        <select id="format" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="mp4" selected>MP4 Video (.mp4)</option>
-                            <option value="webm">WebM Video (.webm)</option>
-                            <option value="png">PNG Image Sequence (.zip)</option>
-                        </select>
-                    </div>
-
-                    <!-- Kalkulasi Frame Otomatis -->
-                    <div class="p-3 bg-gray-950/60 rounded-lg border border-gray-800 text-[11px] text-gray-400 space-y-1.5">
-                        <div class="flex justify-between">
-                            <span>Total Frame Render:</span>
-                            <span id="totalFramesCalc" class="text-emerald-400 font-mono font-bold">600 Frame</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section Panel 2: Microstock Metadata Settings -->
-                <div id="panelMetadata" class="space-y-4 hidden">
-                    <!-- Title Microstock -->
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="text-xs font-medium text-gray-300">Judul Video (Title)</label>
-                            <span class="text-[10px] text-gray-500 font-mono" id="titleLength">0/120</span>
-                        </div>
-                        <input type="text" id="metaTitle" maxlength="120" value="3D Seamless Abstract Geometric Loop Animation Background" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Masukkan judul deskriptif (min. 5 kata)...">
-                    </div>
-
-                    <!-- Description -->
-                    <div>
-                        <label class="text-xs font-medium text-gray-300 block mb-1.5">Deskripsi Lengkap</label>
-                        <textarea id="metaDescription" rows="3" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none leading-relaxed" placeholder="Deskripsi rinci mengenai konsep, warna, dan pergerakan objek 3D...">High quality 4K 3D animated video featuring a seamless looping geometric object rotation. Ideal for tech presentations, motion graphics, overlays, and futuristic digital background screens.</textarea>
-                    </div>
-
-                    <!-- Keywords (Tags) -->
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="text-xs font-medium text-gray-300">Kata Kunci / Keywords (Pisah Komma)</label>
-                            <button id="autoTagBtn" class="text-[10px] text-blue-400 hover:underline flex items-center gap-1">
-                                <i data-lucide="sparkles" class="w-3 h-3"></i> Auto Tag
-                            </button>
-                        </div>
-                        <textarea id="metaKeywords" rows="3" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono text-[11px]" placeholder="3d, loop, animation, abstract, futuristic, geometric, motion graphics...">3d, loop, animation, background, abstract, geometric, motion graphics, 4k, render, tech, futuristic, seamless, rotation, cyber, cyan, presentation, video overlay</textarea>
-                    </div>
-
-                    <!-- Categories & License Type -->
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-xs font-medium text-gray-300 block mb-1">Kategori Utama</label>
-                            <select id="metaCategory1" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                <option value="Backgrounds/Textures" selected>Backgrounds</option>
-                                <option value="Technology">Technology</option>
-                                <option value="Abstract">Abstract</option>
-                                <option value="Arts/Entertainment">Arts</option>
-                                <option value="Science">Science</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs font-medium text-gray-300 block mb-1">Kategori Kedua</label>
-                            <select id="metaCategory2" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                <option value="Technology" selected>Technology</option>
-                                <option value="Science">Science</option>
-                                <option value="Abstract">Abstract</option>
-                                <option value="Industrial">Industrial</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Editorial / Commercial & Release Options -->
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <label class="text-[11px] font-medium text-gray-300 block mb-1">Tipe Lisensi</label>
-                            <select id="metaEditorial" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                <option value="No" selected>Commercial (Biasa)</option>
-                                <option value="Yes">Editorial Only</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[11px] font-medium text-gray-300 block mb-1">Mature Content</label>
-                            <select id="metaMature" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                <option value="No" selected>Tidak (No)</option>
-                                <option value="Yes">Ya (Yes)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Checkbox Otomatis CSV saat Render -->
-                    <div class="pt-2">
-                        <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
-                            <input type="checkbox" id="autoDownloadCsv" checked class="rounded border-gray-700 text-blue-600 focus:ring-blue-500 h-4 w-4 bg-gray-800">
-                            <span>Unduh CSV otomatis saat render selesai</span>
-                        </label>
-                    </div>
-
-                    <!-- Manual CSV Export Button -->
-                    <button id="downloadCsvBtn" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs py-2 px-3 rounded-lg transition flex items-center justify-center gap-2 mt-2 shadow">
-                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                        <span>Unduh Metadata (.CSV) Sekarang</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="p-3 bg-blue-950/20 border border-blue-900/30 rounded-lg text-xs text-blue-300/80 space-y-1 mt-4">
-                <p class="font-semibold text-blue-400 flex items-center gap-1">
-                    <i data-lucide="info" class="w-3.5 h-3.5"></i> Microstock Ready:
-                </p>
-                <p class="text-[11px] leading-relaxed">
-                    Setiap proses render otomatis mengunduh file Video dan file CSV Metadata yang berisi informasi nama file yang selaras.
-                </p>
-            </div>
-        </section>
     </div>
 
-    <script>
-        lucide.createIcons();
+    <!-- PANEL KANAN: PREVIEW CANVAS -->
+    <div class="preview-panel">
+        <div id="iframe-container" class="w-full h-full relative">
+            <iframe id="preview-iframe" class="w-full h-full border-0"></iframe>
+        </div>
 
-        // Sample Default HTML Code for Three.js 3D Scene
-        const defaultCode = '<!DOCTYPE html>\n' +
-'<html>\n' +
-'<head>\n' +
-'    <title>3D Neon Cyber Cube Loop</title>\n' +
-'    <meta name="title" content="3D Neon Cyber Cube Seamless Loop Animation">\n' +
-'    <meta name="description" content="Futuristic glowing 3d neon cyan cube rotating continuously in a seamless motion loop.">\n' +
-'    <meta name="keywords" content="cube, neon, cyan, futuristic, cyber, tech, geometry, 3d, loop">\n' +
-'    <style>\n' +
-'        body { margin: 0; overflow: hidden; background: #000; }\n' +
-'        canvas { width: 100vw; height: 100vh; display: block; }\n' +
-'    </style>\n' +
-'    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><' + '/script>\n' +
-'</head>\n' +
-'<body>\n' +
-'    <script>\n' +
-'        window.scene = new THREE.Scene();\n' +
-'        window.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);\n' +
-'        window.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });\n' +
-'        \n' +
-'        window.renderer.setSize(window.innerWidth, window.innerHeight);\n' +
-'        document.body.appendChild(window.renderer.domElement);\n' +
-'\n' +
-'        const geometry = new THREE.BoxGeometry(2, 2, 2);\n' +
-'        const material = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });\n' +
-'        window.targetMesh = new THREE.Mesh(geometry, material);\n' +
-'        window.scene.add(window.targetMesh);\n' +
-'\n' +
-'        window.camera.position.z = 4;\n' +
-'\n' +
-'        function animate() {\n' +
-'            requestAnimationFrame(animate);\n' +
-'            if (!window.customProgress) {\n' +
-'                window.targetMesh.rotation.x += 0.01;\n' +
-'                window.targetMesh.rotation.y += 0.01;\n' +
-'            }\n' +
-'            window.renderer.render(window.scene, window.camera);\n' +
-'        }\n' +
-'        animate();\n' +
-'\n' +
-'        window.addEventListener("resize", () => {\n' +
-'            window.renderer.setSize(window.innerWidth, window.innerHeight);\n' +
-'            window.camera.aspect = window.innerWidth / window.innerHeight;\n' +
-'            window.camera.updateProjectionMatrix();\n' +
-'        });\n' +
-'    <' + '/script>\n' +
-'</body>\n' +
-'</html>';
+        <!-- Render Loading Overlay -->
+        <div id="render-overlay" class="render-overlay hidden">
+            <div class="text-center space-y-3">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-500"></i>
+                <h3 class="text-lg font-bold text-slate-200">Sedang Merekam Video...</h3>
+                <p id="render-progress" class="text-xs text-slate-400 font-mono">Frame 0 / 300</p>
+            </div>
+        </div>
+    </div>
+</div>
 
-        const codeEditor = document.getElementById('codeEditor');
-        const previewIframe = document.getElementById('previewIframe');
-        const iframeWrapper = document.getElementById('iframeWrapper');
-        const resetCodeBtn = document.getElementById('resetCodeBtn');
-        const renderBtn = document.getElementById('renderBtn');
-        const durationInput = document.getElementById('duration');
-        const fpsInput = document.getElementById('fps');
-        const resolutionSelect = document.getElementById('resolution');
-        const aspectRatioSelect = document.getElementById('aspectRatio');
-        const animationPresetSelect = document.getElementById('animationPreset');
-        const totalFramesCalc = document.getElementById('totalFramesCalc');
-        const viewportResolution = document.getElementById('viewportResolution');
-        
-        const renderOverlay = document.getElementById('renderOverlay');
-        const renderStatusText = document.getElementById('renderStatusText');
-        const progressBar = document.getElementById('progressBar');
-        const renderPercent = document.getElementById('renderPercent');
+<script>
+    const codeEditor = document.getElementById('code-editor');
+    const previewIframe = document.getElementById('preview-iframe');
+    const metaTitle = document.getElementById('meta-title');
+    const metaDesc = document.getElementById('meta-desc');
+    const metaKeywords = document.getElementById('meta-keywords');
+    const presetMotion = document.getElementById('preset-motion');
+    const exportBtn = document.getElementById('export-btn');
+    const renderOverlay = document.getElementById('render-overlay');
+    const renderProgress = document.getElementById('render-progress');
 
-        // Microstock Metadata Elements & Tab Navigation
-        const tabSettingsBtn = document.getElementById('tabSettingsBtn');
-        const tabMetadataBtn = document.getElementById('tabMetadataBtn');
-        const panelSettings = document.getElementById('panelSettings');
-        const panelMetadata = document.getElementById('panelMetadata');
-        const metaTitle = document.getElementById('metaTitle');
-        const titleLength = document.getElementById('titleLength');
-        const metaDescription = document.getElementById('metaDescription');
-        const metaKeywords = document.getElementById('metaKeywords');
-        const metaCategory1 = document.getElementById('metaCategory1');
-        const metaCategory2 = document.getElementById('metaCategory2');
-        const metaEditorial = document.getElementById('metaEditorial');
-        const metaMature = document.getElementById('metaMature');
-        const autoDownloadCsv = document.getElementById('autoDownloadCsv');
-        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
-        const autoTagBtn = document.getElementById('autoTagBtn');
+    let isCapturing = false;
 
-        let isRendering = false;
-        let updateDebounceTimer = null;
+    // 1. DENEUTRALISASI & INJEKSI MASTER AGAR RENDER & PREVIEW 100% SAMA
+    function prepareInjectedHTML(rawCode) {
+        const preset = presetMotion.value;
 
-        // Tab Switcher Logic
-        tabSettingsBtn.addEventListener('click', function() {
-            panelSettings.classList.remove('hidden');
-            panelMetadata.classList.add('hidden');
-            tabSettingsBtn.className = "flex-1 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500 flex items-center justify-center gap-1.5 transition";
-            tabMetadataBtn.className = "flex-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 transition";
-        });
+        // Script Wrapper untuk memaksa THREE.js menggunakan Deterministic Clock & Preserve Drawing
+        const masterEngineInject = `
+        <script class="webg-engine">
+            (function() {
+                // A. Override Date.now & performance.now untuk Sinkronisasi Penuh
+                window.__webg_time = 0;
+                window.__webg_recording = false;
 
-        tabMetadataBtn.addEventListener('click', function() {
-            panelMetadata.classList.remove('hidden');
-            panelSettings.classList.add('hidden');
-            tabMetadataBtn.className = "flex-1 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500 flex items-center justify-center gap-1.5 transition";
-            tabSettingsBtn.className = "flex-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 transition";
-        });
+                const origNow = Date.now;
+                const origPerfNow = performance.now.bind(performance);
 
-        // Live Counter untuk Title Length
-        function updateTitleLength() {
-            titleLength.innerText = metaTitle.value.length + '/120';
-        }
-        metaTitle.addEventListener('input', updateTitleLength);
+                Date.now = function() {
+                    return window.__webg_recording ? window.__webg_time : origNow();
+                };
+                performance.now = function() {
+                    return window.__webg_recording ? window.__webg_time : origPerfNow();
+                };
 
-        // Prioritas Ekstraksi Otomatis Metadata Objek langsung dari Kode HTML
-        function parseMetaFromCode() {
-            const code = codeEditor.value;
-            if (!code) return;
-            try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(code, 'text/html');
-                
-                // Prioritaskan <meta name="title">, <title>, lalu OpenGraph
-                const extractedTitle = doc.querySelector('meta[name="title"]')?.getAttribute('content') || 
-                                       doc.querySelector('title')?.innerText ||
-                                       doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
-                                  
-                const extractedDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || 
-                                      doc.querySelector('meta[property="og:description"]')?.getAttribute('content');
-                                 
-                const extractedKeywords = doc.querySelector('meta[name="keywords"]')?.getAttribute('content') || 
-                                         doc.querySelector('meta[name="tags"]')?.getAttribute('content');
-                                     
-                const cat1Meta = doc.querySelector('meta[name="category1"]')?.getAttribute('content') || 
-                                 doc.querySelector('meta[name="category"]')?.getAttribute('content');
-                                 
-                const cat2Meta = doc.querySelector('meta[name="category2"]')?.getAttribute('content');
-
-                if (extractedTitle && extractedTitle.trim()) metaTitle.value = extractedTitle.trim();
-                if (extractedDesc && extractedDesc.trim()) metaDescription.value = extractedDesc.trim();
-                if (extractedKeywords && extractedKeywords.trim()) metaKeywords.value = extractedKeywords.trim();
-                if (cat1Meta && cat1Meta.trim()) metaCategory1.value = cat1Meta.trim();
-                if (cat2Meta && cat2Meta.trim()) metaCategory2.value = cat2Meta.trim();
-                
-                updateTitleLength();
-            } catch(e) {}
-        }
-
-        function updateIframeCode() {
-            parseMetaFromCode();
-            const code = codeEditor.value;
-            const blob = new Blob([code], { type: 'text/html' });
-            previewIframe.src = URL.createObjectURL(blob);
-        }
-
-        // Otomatis update preview saat kode diubah atau dipaste
-        function handleCodeChange() {
-            clearTimeout(updateDebounceTimer);
-            updateDebounceTimer = setTimeout(() => {
-                updateIframeCode();
-            }, 300);
-        }
-
-        codeEditor.addEventListener('input', handleCodeChange);
-        codeEditor.addEventListener('paste', function() {
-            setTimeout(function() {
-                codeEditor.scrollTop = 0;
-                updateIframeCode();
-            }, 50);
-        });
-
-        resetCodeBtn.addEventListener('click', function() {
-            codeEditor.value = defaultCode;
-            updateIframeCode();
-        });
-
-        // Helper untuk mencari mesh di dalam scene Three.js
-        function findTargetMesh(iframeWin) {
-            if (!iframeWin) return null;
-            if (iframeWin.targetMesh) return iframeWin.targetMesh;
-            if (iframeWin.scene && iframeWin.scene.children) {
-                return iframeWin.scene.children.find(c => c.isMesh || c.type === 'Mesh');
-            }
-            return null;
-        }
-
-        function livePreviewLoop() {
-            if (!isRendering && previewIframe.contentWindow) {
-                try {
-                    const iframeWin = previewIframe.contentWindow;
-                    const preset = animationPresetSelect.value;
-                    const durationSec = Math.max(1, parseFloat(durationInput.value) || 1);
-
-                    if (iframeWin && iframeWin.renderer) {
-                        const mesh = findTargetMesh(iframeWin);
-                        const camera = iframeWin.camera;
-
-                        if (mesh && preset !== 'none') {
-                            iframeWin.customProgress = true;
-                            const now = (Date.now() / 1000) % durationSec;
-                            const progress = now / durationSec;
-
-                            if (preset === 'rotationY') {
-                                mesh.rotation.y = progress * (Math.PI * 2);
-                            } else if (preset === 'floating') {
-                                mesh.position.y = Math.sin(progress * Math.PI * 2) * 0.8;
-                                mesh.rotation.y = progress * (Math.PI * 2);
-                            } else if (preset === 'pulse') {
-                                const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.3;
-                                mesh.scale.set(scale, scale, scale);
-                            } else if (preset === 'turntable' && camera) {
-                                const radius = 5;
-                                const angle = progress * Math.PI * 2;
-                                camera.position.x = Math.sin(angle) * radius;
-                                camera.position.z = Math.cos(angle) * radius;
-                                camera.lookAt(mesh.position);
-                            }
-                        } else if (iframeWin.customProgress) {
-                            iframeWin.customProgress = false;
-                        }
-                    }
-                } catch(e) {}
-            }
-            requestAnimationFrame(livePreviewLoop);
-        }
-
-        animationPresetSelect.addEventListener('change', function() {
-            try {
-                const iframeWin = previewIframe.contentWindow;
-                if (iframeWin) {
-                    const mesh = findTargetMesh(iframeWin);
-                    if (mesh) {
-                        mesh.position.set(0, 0, 0);
-                        mesh.rotation.set(0, 0, 0);
-                        mesh.scale.set(1, 1, 1);
-                    }
-                    if (iframeWin.camera) {
-                        iframeWin.camera.position.set(0, 0, 4);
-                        iframeWin.camera.lookAt(0, 0, 0);
-                    }
-                }
-            } catch(e) {}
-        });
-
-        // Auto Keyword Generator berdasarkan preset & kode
-        autoTagBtn.addEventListener('click', function() {
-            const preset = animationPresetSelect.value;
-            const ratio = aspectRatioSelect.value;
-
-            let extraTags = ['3d', 'loop', 'animation', 'background', 'abstract', 'motion graphics', 'render', '4k', 'seamless'];
-
-            if (preset === 'rotationY') extraTags.push('rotation', '360 degree', 'turntable', 'spinning');
-            if (preset === 'floating') extraTags.push('floating', 'hovering', 'smooth motion', 'levitation');
-            if (preset === 'pulse') extraTags.push('pulsing', 'zooming', 'rhythm', 'scaling');
-            if (preset === 'turntable') extraTags.push('camera orbit', 'showcase', 'presentation');
-
-            if (ratio === '9:16') extraTags.push('vertical', 'tiktok background', 'shorts', 'reels', 'mobile');
-            if (ratio === '1:1') extraTags.push('square', 'instagram background');
-
-            const current = metaKeywords.value.split(',').map(s => s.trim()).filter(Boolean);
-            const combined = Array.from(new Set([...current, ...extraTags]));
-            metaKeywords.value = combined.join(', ');
-        });
-
-        // Dynamic CSV Exporter Function
-        function generateAndDownloadCSV(videoFileName) {
-            const formatVal = document.getElementById('format').value;
-            const fileExt = formatVal === 'png' ? '.zip' : (formatVal === 'mp4' ? '.mp4' : '.webm');
-            const fileName = videoFileName || ('render_' + resolutionSelect.value + '_' + durationInput.value + 's');
-            
-            const headers = ["Filename", "Title", "Description", "Keywords", "Categories", "Category 2", "Editorial", "Mature"];
-            
-            function cleanCSVValue(val) {
-                if (!val) return '""';
-                let stringVal = String(val).replace(/"/g, '""');
-                return '"' + stringVal + '"';
-            }
-
-            const row = [
-                cleanCSVValue(fileName + fileExt),
-                cleanCSVValue(metaTitle.value),
-                cleanCSVValue(metaDescription.value),
-                cleanCSVValue(metaKeywords.value),
-                cleanCSVValue(metaCategory1.value),
-                cleanCSVValue(metaCategory2.value),
-                cleanCSVValue(metaEditorial.value),
-                cleanCSVValue(metaMature.value)
-            ];
-
-            const csvContent = "\uFEFF" + headers.join(",") + "\n" + row.join(",");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            
-            const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.setAttribute('download', fileName + '_microstock_metadata.csv');
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            URL.revokeObjectURL(url);
-        }
-
-        downloadCsvBtn.addEventListener('click', function() {
-            generateAndDownloadCSV();
-        });
-
-        // Resolution options mapped by aspect ratio
-        const resolutionOptions = {
-            '16:9': [
-                { text: 'HD (720p) - 1280 x 720', value: '1280x720' },
-                { text: 'Full HD (1080p) - 1920 x 1080', value: '1920x1080' },
-                { text: '4K Ultra HD - 3840 x 2160', value: '3840x2160', selected: true },
-                { text: '8K Ultra HD - 7680 x 4320', value: '7680x4320' }
-            ],
-            '9:16': [
-                { text: 'HD Vertical (720p) - 720 x 1280', value: '720x1280' },
-                { text: 'Full HD Vertical (Shorts/Reels) - 1080 x 1920', value: '1080x1920', selected: true },
-                { text: '4K Vertical - 2160 x 3840', value: '2160x3840' }
-            ],
-            '1:1': [
-                { text: 'Square HD - 720 x 720', value: '720x720' },
-                { text: 'Square Full HD - 1080 x 1080', value: '1080x1080', selected: true },
-                { text: 'Square 2K - 2048 x 2048', value: '2048x2048' }
-            ]
-        };
-
-        function updateAspectRatioLayout() {
-            const ratio = aspectRatioSelect.value;
-            
-            iframeWrapper.className = "transition-all duration-300 max-w-full max-h-full flex items-center justify-center bg-black rounded-lg border border-gray-800 overflow-hidden shadow-2xl relative ";
-            
-            if (ratio === '16:9') {
-                iframeWrapper.classList.add('aspect-video', 'w-full');
-                viewportResolution.innerText = '16:9 Landscape';
-            } else if (ratio === '9:16') {
-                iframeWrapper.classList.add('aspect-[9/16]', 'h-full');
-                viewportResolution.innerText = '9:16 Portrait';
-            } else if (ratio === '1:1') {
-                iframeWrapper.classList.add('aspect-square', 'h-full');
-                viewportResolution.innerText = '1:1 Square';
-            }
-
-            resolutionSelect.innerHTML = '';
-            resolutionOptions[ratio].forEach(function(opt) {
-                const option = document.createElement('option');
-                option.value = opt.value;
-                option.textContent = opt.text;
-                if (opt.selected) option.selected = true;
-                resolutionSelect.appendChild(option);
-            });
-
-            setTimeout(function() {
-                if (previewIframe.contentWindow) {
-                    previewIframe.contentWindow.dispatchEvent(new Event('resize'));
-                }
-            }, 350);
-        }
-
-        aspectRatioSelect.addEventListener('change', updateAspectRatioLayout);
-
-        function updateTotalFrames() {
-            const dur = Math.max(0, parseFloat(durationInput.value) || 0);
-            const fps = parseInt(fpsInput.value) || 0;
-            const total = Math.floor(dur * fps);
-            totalFramesCalc.innerText = total + ' Frame';
-        }
-
-        durationInput.addEventListener('input', updateTotalFrames);
-        fpsInput.addEventListener('change', updateTotalFrames);
-        updateTotalFrames();
-
-        // Inisialisasi awal
-        codeEditor.value = defaultCode;
-        updateAspectRatioLayout();
-        updateIframeCode();
-        requestAnimationFrame(livePreviewLoop);
-
-        // Render System (Frame-by-Frame CCapture dengan Ekspor Otomatis Video & CSV)
-        renderBtn.addEventListener('click', function() {
-            isRendering = true;
-            const resVal = resolutionSelect.value.split('x');
-            const targetWidth = parseInt(resVal[0]);
-            const targetHeight = parseInt(resVal[1]);
-            const durationSec = Math.max(1, parseFloat(durationInput.value) || 1);
-            const fpsVal = parseInt(fpsInput.value);
-            const formatVal = document.getElementById('format').value;
-            const preset = animationPresetSelect.value;
-            const totalFrames = Math.floor(durationSec * fpsVal);
-
-            const iframeWin = previewIframe.contentWindow;
-            const iframeDoc = previewIframe.contentDocument;
-            const canvas = iframeDoc ? iframeDoc.querySelector('canvas') : null;
-
-            if (!canvas) {
-                renderStatusText.innerText = 'Error: Tidak ditemukan elemen <canvas> 3D di dalam kode!';
-                renderOverlay.classList.remove('hidden');
-                setTimeout(function() {
-                    renderOverlay.classList.add('hidden');
-                    isRendering = false;
-                }, 2500);
-                return;
-            }
-
-            renderOverlay.classList.remove('hidden');
-            progressBar.style.width = '0%';
-            renderPercent.innerText = '0%';
-            renderStatusText.innerText = 'Menyiapkan Canvas & CCapture...';
-
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            canvas.style.width = '100%';
-            canvas.style.height = '100%';
-
-            iframeWin.dispatchEvent(new Event('resize'));
-
-            const fileName = 'render_' + targetWidth + 'x' + targetHeight + '_' + durationSec + 's';
-            const captureFormat = (formatVal === 'mp4') ? 'webm' : formatVal;
-
-            const capturer = new CCapture({
-                format: captureFormat,
-                framerate: fpsVal,
-                verbose: false,
-                name: fileName
-            });
-
-            let currentFrame = 0;
-            capturer.start();
-
-            function captureLoop() {
-                if (currentFrame < totalFrames) {
-                    const progress = currentFrame / totalFrames;
-
-                    const mesh = findTargetMesh(iframeWin);
-                    const camera = iframeWin.camera;
-
-                    if (mesh && preset !== 'none') {
-                        iframeWin.customProgress = true;
+                // B. Auto Intercept Three.js Renderer saat diinstansiasi di dalam kode
+                const checkThreeInterval = setInterval(() => {
+                    if (window.THREE) {
+                        clearInterval(checkThreeInterval);
                         
-                        if (preset === 'rotationY') {
-                            mesh.rotation.y = progress * (Math.PI * 2);
-                        } else if (preset === 'floating') {
-                            mesh.position.y = Math.sin(progress * Math.PI * 2) * 0.8;
-                            mesh.rotation.y = progress * (Math.PI * 2);
-                        } else if (preset === 'pulse') {
-                            const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.3;
-                            mesh.scale.set(scale, scale, scale);
-                        } else if (preset === 'turntable' && camera) {
-                            const radius = 5;
-                            const angle = progress * Math.PI * 2;
-                            camera.position.x = Math.sin(angle) * radius;
-                            camera.position.z = Math.cos(angle) * radius;
-                            camera.lookAt(mesh.position);
-                        }
+                        // Force WebGLRenderer Settings
+                        const origRenderer = THREE.WebGLRenderer;
+                        THREE.WebGLRenderer = function(options = {}) {
+                            options.preserveDrawingBuffer = true; // MANDATORI untuk Capture Canvas
+                            options.antialias = true;
+                            const renderer = new origRenderer(options);
+                            window.__webg_renderer = renderer;
+                            return renderer;
+                        };
+                        Object.assign(THREE.WebGLRenderer, origRenderer);
+
+                        // Injection Movement Preset
+                        let angle = 0;
+                        const originalRender = THREE.WebGLRenderer.prototype.render;
+                        THREE.WebGLRenderer.prototype.render = function(scene, camera) {
+                            if ('${preset}' === 'orbit' && camera) {
+                                angle += 0.005;
+                                camera.position.x = Math.sin(angle) * 5;
+                                camera.position.z = Math.cos(angle) * 5;
+                                camera.lookAt(scene.position);
+                            } else if ('${preset}' === 'bounce' && camera) {
+                                angle += 0.02;
+                                camera.position.y = 2 + Math.sin(angle) * 0.5;
+                            } else if ('${preset}' === 'zoom' && camera) {
+                                angle += 0.01;
+                                camera.position.z = 4 + Math.sin(angle) * 1.5;
+                            }
+                            originalRender.apply(this, arguments);
+                        };
                     }
+                }, 10);
+            })();
+        <\/script>
+        `;
 
-                    capturer.capture(canvas);
-                    currentFrame++;
+        // Gabungkan Master Inject di bagian atas head/body
+        if (rawCode.includes('<head>')) {
+            return rawCode.replace('<head>', '<head>' + masterEngineInject);
+        } else {
+            return masterEngineInject + rawCode;
+        }
+    }
 
-                    const percent = Math.round((currentFrame / totalFrames) * 100);
-                    progressBar.style.width = percent + '%';
-                    renderPercent.innerText = percent + '%';
-                    renderStatusText.innerText = 'Merekam Frame ' + currentFrame + ' dari ' + totalFrames + ' (' + durationSec + 's)...';
+    // 2. EKSTRAKSI METADATA DARI KODE SECARA OTOMATIS
+    function extractMetadata(code) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(code, 'text/html');
 
-                    iframeWin.requestAnimationFrame(captureLoop);
-                } else {
-                    renderStatusText.innerText = 'Selesai merekam! Mengompilasi & mengunduh file video...';
-                    capturer.stop();
-                    capturer.save();
+        // Extract Title
+        const titleTag = doc.querySelector('title')?.innerText;
+        const metaTitleTag = doc.querySelector('meta[name="title"]')?.getAttribute('content');
+        metaTitle.value = metaTitleTag || titleTag || "3D Abstract Microstock Animation";
 
-                    // Auto unduh file CSV jika opsi dicentang
-                    if (autoDownloadCsv.checked) {
-                        setTimeout(function() {
-                            generateAndDownloadCSV(fileName);
-                        }, 1200);
-                    }
+        // Extract Description
+        const descTag = doc.querySelector('meta[name="description"]')?.getAttribute('content');
+        metaDesc.value = descTag || "High quality 3D WebGL animation loop for microstock.";
 
-                    setTimeout(function() {
-                        renderOverlay.classList.add('hidden');
-                        isRendering = false;
-                        updateIframeCode();
-                    }, 2500);
-                }
-            }
+        // Extract Keywords
+        const keyTag = doc.querySelector('meta[name="keywords"]')?.getAttribute('content');
+        metaKeywords.value = keyTag || "3d, loop, webgl, background, microstock, motion";
+    }
 
-            captureLoop();
+    // 3. AUTO PREVIEW & RESET SCROLL SAAT PASTE / EDIT
+    function updatePreview() {
+        const rawCode = codeEditor.value;
+        if (!rawCode.trim()) return;
+
+        extractMetadata(rawCode);
+        const injected = prepareInjectedHTML(rawCode);
+
+        // Update iframe via srcdoc untuk isolasi penuh
+        previewIframe.srcdoc = injected;
+    }
+
+    // Event Listener Paste & Input
+    codeEditor.addEventListener('paste', () => {
+        setTimeout(() => {
+            codeEditor.scrollTop = 0; // Fix: Kembalikan scroll ke paling atas
+            updatePreview();
+        }, 50);
+    });
+
+    codeEditor.addEventListener('input', () => {
+        updatePreview();
+    });
+
+    presetMotion.addEventListener('change', updatePreview);
+
+    // 4. SISTEM RENDER VIDEO CCAPTURE LENGKAP
+    exportBtn.addEventListener('click', () => {
+        const iframeWin = previewIframe.contentWindow;
+        const iframeDoc = previewIframe.contentDocument;
+
+        if (!iframeWin || !iframeWin.THREE) {
+            alert("Sistem 3D belum siap di preview. Pastikan kode valid!");
+            return;
+        }
+
+        const canvas = iframeDoc.querySelector('canvas');
+        if (!canvas) {
+            alert("Canvas 3D tidak ditemukan!");
+            return;
+        }
+
+        renderOverlay.classList.remove('hidden');
+
+        // Init CCapture
+        const capturer = new CCapture({
+            format: 'webm',
+            framerate: 30,
+            verbose: false
         });
-    </script>
+
+        const totalFrames = 300; // 10 Detik
+        let currentFrame = 0;
+
+        iframeWin.__webg_recording = true;
+        capturer.start();
+
+        function renderFrameStep() {
+            if (currentFrame < totalFrames) {
+                // Dimajukan 33.3ms per frame (30fps) secara buatan
+                iframeWin.__webg_time = currentFrame * (1000 / 30);
+
+                // Re-render scene internal
+                if (iframeWin.__webg_renderer) {
+                    iframeWin.dispatchEvent(new Event('resize'));
+                }
+
+                capturer.capture(canvas); currentFrame++; renderProgress.innerText = `Frame ${currentFrame} / ${totalFrames}`; requestAnimationFrame(renderFrameStep); } else { capturer.stop(); capturer.save((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${metaTitle.value.toLowerCase().replace(/[^a-z0-9]/g, '-')}.webm`;
+                    a.click();
+
+                    iframeWin.__webg_recording = false;
+                    renderOverlay.classList.add('hidden');
+                });
+            }
+        }
+
+        renderFrameStep();
+    });
+</script>
+
 </body>
 </html>
