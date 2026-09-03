@@ -278,10 +278,10 @@
 
             <div class="p-3 bg-blue-950/20 border border-blue-900/30 rounded-lg text-xs text-blue-300/80 space-y-1 mt-4">
                 <p class="font-semibold text-blue-400 flex items-center gap-1">
-                    <i data-lucide="info" class="w-3.5 h-3.5"></i> Microstock Ready:
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i> Tips Efek Glow & Transparansi:
                 </p>
                 <p class="text-[11px] leading-relaxed">
-                    Setiap proses render otomatis mengunduh file Video dan file CSV Metadata yang berisi informasi nama file yang selaras.
+                    Gunakan <code class="bg-blue-900/50 px-1 rounded text-emerald-300">blending: THREE.AdditiveBlending</code> dan <code class="bg-blue-900/50 px-1 rounded text-emerald-300">depthWrite: false</code> pada material Three.js agar efek pendaran cahaya (glow/flame) terbaca terang dan transparan saat dirender.
                 </p>
             </div>
         </section>
@@ -294,10 +294,10 @@
         const defaultCode = '<!DOCTYPE html>\n' +
 '<html>\n' +
 '<head>\n' +
-'    <title>3D Cinematic Fire & Flame Clean Loop</title>\n' +
-'    <meta name="title" content="3D Cinematic Fire Light Flame Loop Animation">\n' +
-'    <meta name="description" content="Cinematic 3D fire light flickering simulation.">\n' +
-'    <meta name="keywords" content="flame light, dynamic flickering, 3d fire, cinematic lighting, flame animation, motion graphics, 4k loop">\n' +
+'    <title>3D Cinematic Glowing Fire Loop</title>\n' +
+'    <meta name="title" content="3D Cinematic Glowing Fire Light Loop Animation">\n' +
+'    <meta name="description" content="Cinematic 3D glowing fire light simulation with additive bloom transparency.">\n' +
+'    <meta name="keywords" content="glow effect, additive flame, dynamic flickering, 3d fire, cinematic lighting, flame animation, motion graphics, 4k loop">\n' +
 '    <style>\n' +
 '        body { margin: 0; overflow: hidden; background: #000000; }\n' +
 '        canvas { width: 100vw; height: 100vh; display: block; }\n' +
@@ -306,7 +306,7 @@
 '</head>\n' +
 '<body>\n' +
 '    <script>\n' +
-''        // 1. Inisialisasi Scene, Kamera, & WebGL Renderer (Tanpa Bayangan / Shadow Map)\n' +
+'        // 1. Inisialisasi Scene, Kamera, & WebGL Renderer\n' +
 '        window.scene = new THREE.Scene();\n' +
 '        window.scene.background = new THREE.Color(0x000000);\n' +
 '\n' +
@@ -314,49 +314,72 @@
 '        window.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });\n' +
 '        window.renderer.setSize(window.innerWidth, window.innerHeight);\n' +
 '        window.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));\n' +
-'        \n' +
-'        // Nonaktifkan Shadow Map pada WebGL Renderer\n' +
+'        window.renderer.toneMapping = THREE.ACESFilmicToneMapping;\n' +
+'        window.renderer.toneMappingExposure = 1.2;\n' +
 '        window.renderer.shadowMap.enabled = false;\n' +
 '        document.body.appendChild(window.renderer.domElement);\n' +
 '\n' +
 '        // 2. Pencahayaan Sekitar\n' +
-'        const ambientLight = new THREE.AmbientLight(0x111111, 0.25);\n' +
+'        const ambientLight = new THREE.AmbientLight(0x111111, 0.2);\n' +
 '        window.scene.add(ambientLight);\n' +
 '\n' +
 '        const moonLight = new THREE.DirectionalLight(0x334155, 0.3);\n' +
 '        moonLight.position.set(-5, 8, -5);\n' +
 '        window.scene.add(moonLight);\n' +
 '\n' +
-'        // 3. Sumber Cahaya Utama Api (Tanpa Bayangan)\n' +
-'        const fireLight = new THREE.PointLight(0xff6b1a, 3.8, 25, 1.8);\n' +
+'        // 3. Sumber Cahaya Utama Api\n' +
+'        const fireLight = new THREE.PointLight(0xff6b1a, 4.5, 25, 1.8);\n' +
 '        fireLight.position.set(0, 1.2, 0);\n' +
 '        fireLight.castShadow = false;\n' +
 '        window.scene.add(fireLight);\n' +
 '        window.fireLight = fireLight;\n' +
 '\n' +
-'        // Inti Cahaya Api Emas\n' +
-'        const coreLight = new THREE.PointLight(0xffea78, 2.0, 10);\n' +
+'        const coreLight = new THREE.PointLight(0xffea78, 2.5, 12);\n' +
 '        coreLight.position.set(0, 1.0, 0);\n' +
 '        window.scene.add(coreLight);\n' +
 '        window.coreLight = coreLight;\n' +
 '\n' +
-'        // 4. Objek Visual Kobaran Api\n' +
-'        const flameGeo = new THREE.ConeGeometry(0.45, 1.6, 16, 16);\n' +
-'        flameGeo.translate(0, 0.8, 0);\n' +
+'        // 4. Objek Visual Kobaran Api dengan Additive Blending (Efek Glow Pendaran Cahaya)\n' +
+'        const flameGeo = new THREE.ConeGeometry(0.5, 1.8, 24, 24);\n' +
+'        flameGeo.translate(0, 0.9, 0);\n' +
 '        const flameMat = new THREE.MeshBasicMaterial({\n' +
 '            color: 0xff4500,\n' +
 '            transparent: true,\n' +
-'            opacity: 0.85\n' +
+'            opacity: 0.85,\n' +
+'            blending: THREE.AdditiveBlending, // Menghasilkan pendaran cahaya aditif murni\n' +
+'            depthWrite: false,\n' +
+'            side: THREE.DoubleSide\n' +
 '        });\n' +
 '        const flameMesh = new THREE.Mesh(flameGeo, flameMat);\n' +
 '        flameMesh.position.set(0, 0, 0);\n' +
 '        window.scene.add(flameMesh);\n' +
 '\n' +
-'        const innerFlameGeo = new THREE.ConeGeometry(0.25, 1.0, 16);\n' +
-'        innerFlameGeo.translate(0, 0.5, 0);\n' +
-'        const innerFlameMat = new THREE.MeshBasicMaterial({ color: 0xffea78 });\n' +
+'        const innerFlameGeo = new THREE.ConeGeometry(0.3, 1.2, 24);\n' +
+'        innerFlameGeo.translate(0, 0.6, 0);\n' +
+'        const innerFlameMat = new THREE.MeshBasicMaterial({\n' +
+'            color: 0xffd700,\n' +
+'            transparent: true,\n' +
+'            opacity: 0.9,\n' +
+'            blending: THREE.AdditiveBlending,\n' +
+'            depthWrite: false\n' +
+'        });\n' +
 '        const innerFlame = new THREE.Mesh(innerFlameGeo, innerFlameMat);\n' +
 '        flameMesh.add(innerFlame);\n' +
+'\n' +
+'        // Lapisan Pendaran Cahaya Tambahan (Outer Glow Halo)\n' +
+'        const glowSphereGeo = new THREE.SphereGeometry(1.1, 32, 32);\n' +
+'        const glowSphereMat = new THREE.MeshBasicMaterial({\n' +
+'            color: 0xff3300,\n' +
+'            transparent: true,\n' +
+'            opacity: 0.35,\n' +
+'            blending: THREE.AdditiveBlending,\n' +
+'            depthWrite: false,\n' +
+'            side: THREE.BackSide\n' +
+'        });\n' +
+'        const glowHalo = new THREE.Mesh(glowSphereGeo, glowSphereMat);\n' +
+'        glowHalo.position.set(0, 1.2, 0);\n' +
+'        window.scene.add(glowHalo);\n' +
+'        window.glowHalo = glowHalo;\n' +
 '\n' +
 '        // 5. Objek Utama Mesh\n' +
 '        const geometry = new THREE.IcosahedronGeometry(1.3, 1);\n' +
@@ -367,8 +390,6 @@
 '        });\n' +
 '        window.targetMesh = new THREE.Mesh(geometry, material);\n' +
 '        window.targetMesh.position.set(0, 2.3, 2.2);\n' +
-'        window.targetMesh.castShadow = false;\n' +
-'        window.targetMesh.receiveShadow = false;\n' +
 '        window.scene.add(window.targetMesh);\n' +
 '\n' +
 '        // 6. Bidang Lantai & Dinding Latar\n' +
@@ -377,14 +398,12 @@
 '        const floor = new THREE.Mesh(floorGeo, floorMat);\n' +
 '        floor.rotation.x = -Math.PI / 2;\n' +
 '        floor.position.y = 0;\n' +
-'        floor.receiveShadow = false;\n' +
 '        window.scene.add(floor);\n' +
 '\n' +
 '        const wallGeo = new THREE.PlaneGeometry(30, 20);\n' +
 '        const wallMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.9, metalness: 0.02 });\n' +
 '        const wall = new THREE.Mesh(wallGeo, wallMat);\n' +
 '        wall.position.set(0, 8, -5);\n' +
-'        wall.receiveShadow = false;\n' +
 '        window.scene.add(wall);\n' +
 '\n' +
 '        window.camera.position.set(0, 3.2, 7.5);\n' +
@@ -395,8 +414,8 @@
 '            requestAnimationFrame(animate);\n' +
 '            time += 0.03;\n' +
 '\n' +
-'            const flicker = 3.5 + Math.sin(time * 12) * 0.6 + Math.sin(time * 23) * 0.4 + (Math.random() - 0.5) * 0.5;\n' +
-'            window.fireLight.intensity = Math.max(1.8, flicker);\n' +
+'            const flicker = 3.8 + Math.sin(time * 12) * 0.7 + Math.sin(time * 23) * 0.4 + (Math.random() - 0.5) * 0.5;\n' +
+'            window.fireLight.intensity = Math.max(2.0, flicker);\n' +
 '            window.coreLight.intensity = window.fireLight.intensity * 0.6;\n' +
 '\n' +
 '            const wobbleX = (Math.sin(time * 15) * 0.08) + (Math.random() - 0.5) * 0.05;\n' +
@@ -408,6 +427,10 @@
 '            flameMesh.scale.x = 1.0 + Math.sin(time * 20) * 0.15;\n' +
 '            flameMesh.scale.z = 1.0 + Math.cos(time * 18) * 0.15;\n' +
 '            flameMesh.scale.y = 1.0 + Math.sin(time * 25) * 0.2 + (Math.random() - 0.5) * 0.1;\n' +
+'            \n' +
+'            if (window.glowHalo) {\n' +
+'                window.glowHalo.scale.setScalar(1.0 + Math.sin(time * 15) * 0.08);\n' +
+'            }\n' +
 '\n' +
 '            if (!window.customProgress) {\n' +
 '                window.targetMesh.rotation.x += 0.005;\n' +
