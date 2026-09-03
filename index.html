@@ -281,97 +281,141 @@
     <script>
         lucide.createIcons();
 
-        // Sample Default HTML Code with Studio Quality Soft Shadows for Three.js
+        // Sample Default HTML Code with Realistic Fire Flame & Dynamic Shadow Simulation for Three.js
         const defaultCode = '<!DOCTYPE html>\n' +
 '<html>\n' +
 '<head>\n' +
-'    <title>3D Soft Dynamic Shadows Loop</title>\n' +
-'    <meta name="title" content="3D Cinematic Soft Shadow Loop Animation">\n' +
-'    <meta name="description" content="Cinematic 3d object with ultra smooth dynamic moving shadows on high definition ground plane.">\n' +
-'    <meta name="keywords" content="shadows, soft shadow, 3d loop, cinematic, light, rendering, motion graphics, 4k">\n' +
+'    <title>3D Cinematic Fire & Flame Dynamic Shadow Loop</title>\n' +
+'    <meta name="title" content="3D Cinematic Fire Light Flame Shadow Loop Animation">\n' +
+'    <meta name="description" content="Cinematic 3D fire light flickering simulation with realistic dancing flame shadows on ground and backdrop.">\n' +
+'    <meta name="keywords" content="fire shadow, flame light, dynamic flickering, 3d fire, cinematic lighting, flame animation, motion graphics, 4k loop">\n' +
 '    <style>\n' +
-'        body { margin: 0; overflow: hidden; background: #08090c; }\n' +
+'        body { margin: 0; overflow: hidden; background: #050302; }\n' +
 '        canvas { width: 100vw; height: 100vh; display: block; }\n' +
 '    </style>\n' +
 '    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><' + '/script>\n' +
 '</head>\n' +
 '<body>\n' +
 '    <script>\n' +
-'        // 1. Inisialisasi Scene, Fog, Kamera, & WebGL Renderer dengan Soft Shadow Map\n' +
+'        // 1. Inisialisasi Scene, Fog, Kamera, & WebGL Renderer\n' +
 '        window.scene = new THREE.Scene();\n' +
-'        window.scene.background = new THREE.Color(0x0a0c10);\n' +
-'        window.scene.fog = new THREE.FogExp2(0x0a0c10, 0.06);\n' +
+'        window.scene.background = new THREE.Color(0x070403);\n' +
+'        window.scene.fog = new THREE.FogExp2(0x070403, 0.04);\n' +
 '\n' +
 '        window.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);\n' +
 '        window.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });\n' +
-'        \n' +
 '        window.renderer.setSize(window.innerWidth, window.innerHeight);\n' +
 '        window.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));\n' +
 '        \n' +
-'        // PENTING: Aktifkan Shadow Map tipe PCFSoftShadowMap agar tepi bayangan bergerak sangat halus\n' +
+'        // Aktifkan Shadow Map tipe PCFSoftShadowMap agar bayangan api bergerak sangat halus\n' +
 '        window.renderer.shadowMap.enabled = true;\n' +
 '        window.renderer.shadowMap.type = THREE.PCFSoftShadowMap;\n' +
 '        document.body.appendChild(window.renderer.domElement);\n' +
 '\n' +
-'        // 2. Pencahayaan Studio (Key Light + Shadow Generator + Ambient + Fill Light)\n' +
-'        const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);\n' +
+'        // 2. Pencahayaan Sekitar (Ambient & Backlight Cahaya Bulan)\n' +
+'        const ambientLight = new THREE.AmbientLight(0x2a1508, 0.35);\n' +
 '        window.scene.add(ambientLight);\n' +
 '\n' +
-'        window.dirLight = new THREE.DirectionalLight(0x38bdf8, 2.2);\n' +
-'        window.dirLight.position.set(6, 9, 5);\n' +
-'        window.dirLight.castShadow = true;\n' +
+'        const moonLight = new THREE.DirectionalLight(0x1e293b, 0.4);\n' +
+'        moonLight.position.set(-5, 8, -5);\n' +
+'        window.scene.add(moonLight);\n' +
+'\n' +
+'        // 3. Sumber Cahaya Utama Api (Dynamic Flickering Fire PointLight)\n' +
+'        const fireLight = new THREE.PointLight(0xff6b1a, 3.5, 25, 1.8);\n' +
+'        fireLight.position.set(0, 1.2, 0);\n' +
+'        fireLight.castShadow = true;\n' +
 '        \n' +
-'        // Resolusi Shadow Map 2048x2048 untuk detail tinggi pada render 4K\n' +
-'        window.dirLight.shadow.mapSize.width = 2048;\n' +
-'        window.dirLight.shadow.mapSize.height = 2048;\n' +
-'        window.dirLight.shadow.camera.near = 0.5;\n' +
-'        window.dirLight.shadow.camera.far = 30;\n' +
-'        window.dirLight.shadow.camera.left = -6;\n' +
-'        window.dirLight.shadow.camera.right = 6;\n' +
-'        window.dirLight.shadow.camera.top = 6;\n' +
-'        window.dirLight.shadow.camera.bottom = -6;\n' +
-'        window.dirLight.shadow.bias = -0.0001; // Menghilangkan cacat garis bayangan (shadow acne)\n' +
-'        window.dirLight.shadow.radius = 4; // Menghaluskan blur pinggiran bayangan\n' +
-'        window.scene.add(window.dirLight);\n' +
+'        // Resolusi Shadow Map tinggi 2048x2048 untuk detail gerak bayangan tajam & halus\n' +
+'        fireLight.shadow.mapSize.width = 2048;\n' +
+'        fireLight.shadow.mapSize.height = 2048;\n' +
+'        fireLight.shadow.camera.near = 0.2;\n' +
+'        fireLight.shadow.camera.far = 25;\n' +
+'        fireLight.shadow.bias = -0.0008;\n' +
+'        fireLight.shadow.radius = 3.5;\n' +
+'        window.scene.add(fireLight);\n' +
+'        window.fireLight = fireLight;\n' +
 '\n' +
-'        const fillLight = new THREE.PointLight(0xf43f5e, 1.8, 15);\n' +
-'        fillLight.position.set(-5, 4, -2);\n' +
-'        window.scene.add(fillLight);\n' +
+'        // Inti Cahaya Api Emas (Inner Hot Fire Core)\n' +
+'        const coreLight = new THREE.PointLight(0xffea78, 2.0, 10);\n' +
+'        coreLight.position.set(0, 1.0, 0);\n' +
+'        window.scene.add(coreLight);\n' +
+'        window.coreLight = coreLight;\n' +
 '\n' +
-'        // 3. Objek Utama 3D Casting Shadow (Torus Knot Metallic)\n' +
-'        const geometry = new THREE.TorusKnotGeometry(1.1, 0.38, 128, 32);\n' +
+'        // 4. Objek Visual Kobaran Api (Stylized Fire Mesh)\n' +
+'        const flameGeo = new THREE.ConeGeometry(0.45, 1.6, 16, 16);\n' +
+'        flameGeo.translate(0, 0.8, 0);\n' +
+'        const flameMat = new THREE.MeshBasicMaterial({\n' +
+'            color: 0xff4500,\n' +
+'            transparent: true,\n' +
+'            opacity: 0.85\n' +
+'        });\n' +
+'        const flameMesh = new THREE.Mesh(flameGeo, flameMat);\n' +
+'        flameMesh.position.set(0, 0, 0);\n' +
+'        window.scene.add(flameMesh);\n' +
+'\n' +
+'        const innerFlameGeo = new THREE.ConeGeometry(0.25, 1.0, 16);\n' +
+'        innerFlameGeo.translate(0, 0.5, 0);\n' +
+'        const innerFlameMat = new THREE.MeshBasicMaterial({ color: 0xffea78 });\n' +
+'        const innerFlame = new THREE.Mesh(innerFlameGeo, innerFlameMat);\n' +
+'        flameMesh.add(innerFlame);\n' +
+'\n' +
+'        // 5. Objek Utama yang Menghasilkan Bayangan Api (Scrap Crystal/Sculpture)\n' +
+'        const geometry = new THREE.IcosahedronGeometry(1.3, 1);\n' +
 '        const material = new THREE.MeshStandardMaterial({\n' +
-'            color: 0xf1f5f9,\n' +
-'            roughness: 0.18,\n' +
-'            metalness: 0.85\n' +
+'            color: 0x22252a,\n' +
+'            roughness: 0.35,\n' +
+'            metalness: 0.8\n' +
 '        });\n' +
 '        window.targetMesh = new THREE.Mesh(geometry, material);\n' +
-'        window.targetMesh.position.y = 2.0;\n' +
+'        window.targetMesh.position.set(0, 2.3, 2.2);\n' +
 '        window.targetMesh.castShadow = true;\n' +
 '        window.targetMesh.receiveShadow = true;\n' +
 '        window.scene.add(window.targetMesh);\n' +
 '\n' +
-'        // 4. Bidang Alas Penerima Bayangan (Floor Shadow Receiver)\n' +
-'        const floorGeo = new THREE.PlaneGeometry(40, 40);\n' +
-'        const floorMat = new THREE.MeshStandardMaterial({\n' +
-'            color: 0x1e293b,\n' +
-'            roughness: 0.5,\n' +
-'            metalness: 0.2\n' +
-'        });\n' +
+'        // 6. Bidang Lantai & Dinding Latar Penangkap Bayangan Api\n' +
+'        const floorGeo = new THREE.PlaneGeometry(30, 30);\n' +
+'        const floorMat = new THREE.MeshStandardMaterial({ color: 0x181210, roughness: 0.8, metalness: 0.1 });\n' +
 '        const floor = new THREE.Mesh(floorGeo, floorMat);\n' +
 '        floor.rotation.x = -Math.PI / 2;\n' +
 '        floor.position.y = 0;\n' +
-'        floor.receiveShadow = true; // Tangkap bayangan bergerak di sini\n' +
+'        floor.receiveShadow = true;\n' +
 '        window.scene.add(floor);\n' +
 '\n' +
-'        window.camera.position.set(0, 3.8, 7.2);\n' +
-'        window.camera.lookAt(0, 1.4, 0);\n' +
+'        const wallGeo = new THREE.PlaneGeometry(30, 20);\n' +
+'        const wallMat = new THREE.MeshStandardMaterial({ color: 0x140e0c, roughness: 0.9, metalness: 0.05 });\n' +
+'        const wall = new THREE.Mesh(wallGeo, wallMat);\n' +
+'        wall.position.set(0, 8, -5);\n' +
+'        wall.receiveShadow = true;\n' +
+'        window.scene.add(wall);\n' +
 '\n' +
+'        window.camera.position.set(0, 3.2, 7.5);\n' +
+'        window.camera.lookAt(0, 1.8, 0);\n' +
+'\n' +
+'        let time = 0;\n' +
 '        function animate() {\n' +
 '            requestAnimationFrame(animate);\n' +
+'            time += 0.03;\n' +
+'\n' +
+'            // SIMULASI KEDIPAN & KOBARAN CAHAYA API (FIRE FLICKER ENGINE):\n' +
+'            const flicker = 3.2 + Math.sin(time * 12) * 0.6 + Math.sin(time * 23) * 0.4 + (Math.random() - 0.5) * 0.5;\n' +
+'            window.fireLight.intensity = Math.max(1.5, flicker);\n' +
+'            window.coreLight.intensity = window.fireLight.intensity * 0.6;\n' +
+'\n' +
+'            // Goyangan Posisi Cahaya Api (Menghasilkan Efek Bayangan Menari di Lantai & Dinding):\n' +
+'            const wobbleX = (Math.sin(time * 15) * 0.08) + (Math.random() - 0.5) * 0.05;\n' +
+'            const wobbleY = 1.2 + (Math.sin(time * 18) * 0.06) + (Math.random() - 0.5) * 0.04;\n' +
+'            const wobbleZ = (Math.cos(time * 14) * 0.08) + (Math.random() - 0.5) * 0.05;\n' +
+'            window.fireLight.position.set(wobbleX, wobbleY, wobbleZ);\n' +
+'            window.coreLight.position.set(wobbleX, wobbleY - 0.1, wobbleZ);\n' +
+'\n' +
+'            // Deformasi Bentuk Kobaran Api:\n' +
+'            flameMesh.scale.x = 1.0 + Math.sin(time * 20) * 0.15;\n' +
+'            flameMesh.scale.z = 1.0 + Math.cos(time * 18) * 0.15;\n' +
+'            flameMesh.scale.y = 1.0 + Math.sin(time * 25) * 0.2 + (Math.random() - 0.5) * 0.1;\n' +
+'\n' +
 '            if (!window.customProgress) {\n' +
-'                window.targetMesh.rotation.x += 0.008;\n' +
-'                window.targetMesh.rotation.y += 0.012;\n' +
+'                window.targetMesh.rotation.x += 0.005;\n' +
+'                window.targetMesh.rotation.y += 0.009;\n' +
 '            }\n' +
 '            window.renderer.render(window.scene, window.camera);\n' +
 '        }\n' +
@@ -527,6 +571,19 @@
                     if (iframeWin && iframeWin.renderer) {
                         const mesh = findTargetMesh(iframeWin);
                         const camera = iframeWin.camera;
+
+                        // Sinkronkan kedipan dan goyangan cahaya api saat preset aktif
+                        if (iframeWin.fireLight) {
+                            const t = Date.now() * 0.015;
+                            const flicker = 3.2 + Math.sin(t * 2.5) * 0.6 + (Math.random() - 0.5) * 0.4;
+                            iframeWin.fireLight.intensity = Math.max(1.5, flicker);
+                            if (iframeWin.coreLight) iframeWin.coreLight.intensity = flicker * 0.6;
+                            
+                            const wx = Math.sin(t * 3.1) * 0.08 + (Math.random() - 0.5) * 0.04;
+                            const wy = 1.2 + Math.sin(t * 3.7) * 0.06;
+                            const wz = Math.cos(t * 2.9) * 0.08;
+                            iframeWin.fireLight.position.set(wx, wy, wz);
+                        }
 
                         if (mesh && preset !== 'none') {
                             iframeWin.customProgress = true;
