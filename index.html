@@ -278,10 +278,10 @@
 
             <div class="p-3 bg-blue-950/20 border border-blue-900/30 rounded-lg text-xs text-blue-300/80 space-y-1 mt-4">
                 <p class="font-semibold text-blue-400 flex items-center gap-1">
-                    <i data-lucide="info" class="w-3.5 h-3.5"></i> Tips Efek Glow & Transparansi:
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i> Tips Kualitas Render Bebas Pixelated:
                 </p>
                 <p class="text-[11px] leading-relaxed">
-                    Gunakan <code class="bg-blue-900/50 px-1 rounded text-emerald-300">blending: THREE.AdditiveBlending</code> dan <code class="bg-blue-900/50 px-1 rounded text-emerald-300">depthWrite: false</code> pada material Three.js agar efek pendaran cahaya (glow/flame) terbaca terang dan transparan saat dirender.
+                    Gunakan <code class="bg-blue-900/50 px-1 rounded text-emerald-300">dithering: true</code> pada material Three.js untuk menghaluskan gradasi glow. Pilih format <code class="bg-blue-900/50 px-1 rounded text-emerald-300">PNG Sequence (.zip)</code> untuk hasil 100% Lossless untuk Microstock.
                 </p>
             </div>
         </section>
@@ -339,15 +339,16 @@
 '        window.scene.add(coreLight);\n' +
 '        window.coreLight = coreLight;\n' +
 '\n' +
-'        // 4. Objek Visual Kobaran Api dengan Additive Blending (Efek Glow Pendaran Cahaya)\n' +
+'        // 4. Objek Visual Kobaran Api dengan Additive Blending & Dithering (Mencegah Banding/Pixelated)\n' +
 '        const flameGeo = new THREE.ConeGeometry(0.5, 1.8, 24, 24);\n' +
 '        flameGeo.translate(0, 0.9, 0);\n' +
 '        const flameMat = new THREE.MeshBasicMaterial({\n' +
 '            color: 0xff4500,\n' +
 '            transparent: true,\n' +
 '            opacity: 0.85,\n' +
-'            blending: THREE.AdditiveBlending, // Menghasilkan pendaran cahaya aditif murni\n' +
+'            blending: THREE.AdditiveBlending,\n' +
 '            depthWrite: false,\n' +
+'            dithering: true,\n' +
 '            side: THREE.DoubleSide\n' +
 '        });\n' +
 '        const flameMesh = new THREE.Mesh(flameGeo, flameMat);\n' +
@@ -361,6 +362,7 @@
 '            transparent: true,\n' +
 '            opacity: 0.9,\n' +
 '            blending: THREE.AdditiveBlending,\n' +
+'            dithering: true,\n' +
 '            depthWrite: false\n' +
 '        });\n' +
 '        const innerFlame = new THREE.Mesh(innerFlameGeo, innerFlameMat);\n' +
@@ -373,6 +375,7 @@
 '            transparent: true,\n' +
 '            opacity: 0.35,\n' +
 '            blending: THREE.AdditiveBlending,\n' +
+'            dithering: true,\n' +
 '            depthWrite: false,\n' +
 '            side: THREE.BackSide\n' +
 '        });\n' +
@@ -380,454 +383,10 @@
 '        glowHalo.position.set(0, 1.2, 0);\n' +
 '        window.scene.add(glowHalo);\n' +
 '        window.glowHalo = glowHalo;\n' +
-'\n' +
-'        // 5. Objek Utama Mesh\n' +
-'        const geometry = new THREE.IcosahedronGeometry(1.3, 1);\n' +
-'        const material = new THREE.MeshStandardMaterial({\n' +
-'            color: 0x2b2d31,\n' +
-'            roughness: 0.3,\n' +
-'            metalness: 0.8\n' +
-'        });\n' +
-'        window.targetMesh = new THREE.Mesh(geometry, material);\n' +
-'        window.targetMesh.position.set(0, 2.3, 2.2);\n' +
-'        window.scene.add(window.targetMesh);\n' +
-'\n' +
-'        // 6. Bidang Lantai & Dinding Latar\n' +
-'        const floorGeo = new THREE.PlaneGeometry(30, 30);\n' +
-'        const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f0f11, roughness: 0.85, metalness: 0.05 });\n' +
-'        const floor = new THREE.Mesh(floorGeo, floorMat);\n' +
-'        floor.rotation.x = -Math.PI / 2;\n' +
-'        floor.position.y = 0;\n' +
-'        window.scene.add(floor);\n' +
-'\n' +
-'        const wallGeo = new THREE.PlaneGeometry(30, 20);\n' +
-'        const wallMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.9, metalness: 0.02 });\n' +
-'        const wall = new THREE.Mesh(wallGeo, wallMat);\n' +
-'        wall.position.set(0, 8, -5);\n' +
-'        window.scene.add(wall);\n' +
-'\n' +
-'        window.camera.position.set(0, 3.2, 7.5);\n' +
-'        window.camera.lookAt(0, 1.8, 0);\n' +
-'\n' +
-'        let time = 0;\n' +
-'        function animate() {\n' +
-'            requestAnimationFrame(animate);\n' +
-'            time += 0.03;\n' +
-'\n' +
-'            const flicker = 3.8 + Math.sin(time * 12) * 0.7 + Math.sin(time * 23) * 0.4 + (Math.random() - 0.5) * 0.5;\n' +
-'            window.fireLight.intensity = Math.max(2.0, flicker);\n' +
-'            window.coreLight.intensity = window.fireLight.intensity * 0.6;\n' +
-'\n' +
-'            const wobbleX = (Math.sin(time * 15) * 0.08) + (Math.random() - 0.5) * 0.05;\n' +
-'            const wobbleY = 1.2 + (Math.sin(time * 18) * 0.06) + (Math.random() - 0.5) * 0.04;\n' +
-'            const wobbleZ = (Math.cos(time * 14) * 0.08) + (Math.random() - 0.5) * 0.05;\n' +
-'            window.fireLight.position.set(wobbleX, wobbleY, wobbleZ);\n' +
-'            window.coreLight.position.set(wobbleX, wobbleY - 0.1, wobbleZ);\n' +
-'\n' +
-'            flameMesh.scale.x = 1.0 + Math.sin(time * 20) * 0.15;\n' +
-'            flameMesh.scale.z = 1.0 + Math.cos(time * 18) * 0.15;\n' +
-'            flameMesh.scale.y = 1.0 + Math.sin(time * 25) * 0.2 + (Math.random() - 0.5) * 0.1;\n' +
-'            \n' +
-'            if (window.glowHalo) {\n' +
-'                window.glowHalo.scale.setScalar(1.0 + Math.sin(time * 15) * 0.08);\n' +
-'            }\n' +
-'\n' +
-'            if (!window.customProgress) {\n' +
-'                window.targetMesh.rotation.x += 0.005;\n' +
-'                window.targetMesh.rotation.y += 0.009;\n' +
-'            }\n' +
-'            window.renderer.render(window.scene, window.camera);\n' +
-'        }\n' +
-'        animate();\n' +
-'\n' +
-'        window.addEventListener("resize", () => {\n' +
-'            window.renderer.setSize(window.innerWidth, window.innerHeight);\n' +
-'            window.camera.aspect = window.innerWidth / window.innerHeight;\n' +
-'            window.camera.updateProjectionMatrix();\n' +
-'        });\n' +
-'    <' + '/script>\n' +
-'</body>\n' +
-'</html>';
-
-        const codeEditor = document.getElementById('codeEditor');
-        const previewIframe = document.getElementById('previewIframe');
-        const iframeWrapper = document.getElementById('iframeWrapper');
-        const resetCodeBtn = document.getElementById('resetCodeBtn');
-        const renderBtn = document.getElementById('renderBtn');
-        const durationInput = document.getElementById('duration');
-        const fpsInput = document.getElementById('fps');
-        const resolutionSelect = document.getElementById('resolution');
-        const aspectRatioSelect = document.getElementById('aspectRatio');
-        const animationPresetSelect = document.getElementById('animationPreset');
-        const enableShadowsSelect = document.getElementById('enableShadows');
-        const totalFramesCalc = document.getElementById('totalFramesCalc');
-        const viewportResolution = document.getElementById('viewportResolution');
-        
-        const renderOverlay = document.getElementById('renderOverlay');
-        const renderStatusText = document.getElementById('renderStatusText');
-        const progressBar = document.getElementById('progressBar');
-        const renderPercent = document.getElementById('renderPercent');
-
-        // Microstock Metadata Elements & Tab Navigation
-        const tabSettingsBtn = document.getElementById('tabSettingsBtn');
-        const tabMetadataBtn = document.getElementById('tabMetadataBtn');
-        const panelSettings = document.getElementById('panelSettings');
-        const panelMetadata = document.getElementById('panelMetadata');
-        const metaTitle = document.getElementById('metaTitle');
-        const titleLength = document.getElementById('titleLength');
-        const metaDescription = document.getElementById('metaDescription');
-        const metaKeywords = document.getElementById('metaKeywords');
-        const metaCategory1 = document.getElementById('metaCategory1');
-        const metaCategory2 = document.getElementById('metaCategory2');
-        const metaEditorial = document.getElementById('metaEditorial');
-        const metaMature = document.getElementById('metaMature');
-        const autoDownloadCsv = document.getElementById('autoDownloadCsv');
-        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
-        const autoTagBtn = document.getElementById('autoTagBtn');
-
-        let isRendering = false;
-        let updateDebounceTimer = null;
-
-        // Tab Switcher Logic
-        tabSettingsBtn.addEventListener('click', function() {
-            panelSettings.classList.remove('hidden');
-            panelMetadata.classList.add('hidden');
-            tabSettingsBtn.className = "flex-1 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500 flex items-center justify-center gap-1.5 transition";
-            tabMetadataBtn.className = "flex-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 transition";
-        });
-
-        tabMetadataBtn.addEventListener('click', function() {
-            panelMetadata.classList.remove('hidden');
-            panelSettings.classList.add('hidden');
-            tabMetadataBtn.className = "flex-1 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500 flex items-center justify-center gap-1.5 transition";
-            tabSettingsBtn.className = "flex-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 transition";
-        });
-
-        // Live Counter untuk Title Length
-        function updateTitleLength() {
-            titleLength.innerText = metaTitle.value.length + '/120';
-        }
-        metaTitle.addEventListener('input', updateTitleLength);
-
-        // Prioritas Ekstraksi Otomatis Metadata Objek langsung dari Kode HTML
-        function parseMetaFromCode() {
-            const code = codeEditor.value;
-            if (!code) return;
-            try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(code, 'text/html');
-                
-                // Prioritaskan <meta name="title">, <title>, lalu OpenGraph
-                const extractedTitle = doc.querySelector('meta[name="title"]')?.getAttribute('content') || 
-                                       doc.querySelector('title')?.innerText ||
-                                       doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
-                                  
-                const extractedDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || 
-                                      doc.querySelector('meta[property="og:description"]')?.getAttribute('content');
-                                 
-                const extractedKeywords = doc.querySelector('meta[name="keywords"]')?.getAttribute('content') || 
-                                         doc.querySelector('meta[name="tags"]')?.getAttribute('content');
-                                     
-                const cat1Meta = doc.querySelector('meta[name="category1"]')?.getAttribute('content') || 
-                                 doc.querySelector('meta[name="category"]')?.getAttribute('content');
-                                 
-                const cat2Meta = doc.querySelector('meta[name="category2"]')?.getAttribute('content');
-
-                if (extractedTitle && extractedTitle.trim()) metaTitle.value = extractedTitle.trim();
-                if (extractedDesc && extractedDesc.trim()) metaDescription.value = extractedDesc.trim();
-                if (extractedKeywords && extractedKeywords.trim()) metaKeywords.value = extractedKeywords.trim();
-                if (cat1Meta && cat1Meta.trim()) metaCategory1.value = cat1Meta.trim();
-                if (cat2Meta && cat2Meta.trim()) metaCategory2.value = cat2Meta.trim();
-                
-                updateTitleLength();
-            } catch(e) {}
-        }
-
-        function updateIframeCode() {
-            parseMetaFromCode();
-            const code = codeEditor.value;
-            const blob = new Blob([code], { type: 'text/html' });
-            previewIframe.src = URL.createObjectURL(blob);
-        }
-
-        // Otomatis update preview saat kode diubah atau dipaste
-        function handleCodeChange() {
-            clearTimeout(updateDebounceTimer);
-            updateDebounceTimer = setTimeout(() => {
-                updateIframeCode();
-            }, 300);
-        }
-
-        codeEditor.addEventListener('input', handleCodeChange);
-        codeEditor.addEventListener('paste', function() {
-            setTimeout(function() {
-                codeEditor.scrollTop = 0;
-                updateIframeCode();
-            }, 50);
-        });
-
-        resetCodeBtn.addEventListener('click', function() {
-            codeEditor.value = defaultCode;
-            updateIframeCode();
-        });
-
-        // Helper untuk mencari mesh di dalam scene Three.js
-        function findTargetMesh(iframeWin) {
-            if (!iframeWin) return null;
-            if (iframeWin.targetMesh) return iframeWin.targetMesh;
-            if (iframeWin.scene && iframeWin.scene.children) {
-                return iframeWin.scene.children.find(c => c.isMesh || c.type === 'Mesh');
-            }
-            return null;
-        }
-
-        function livePreviewLoop() {
-            if (!isRendering && previewIframe.contentWindow) {
-                try {
-                    const iframeWin = previewIframe.contentWindow;
-                    const preset = animationPresetSelect.value;
-                    const durationSec = Math.max(1, parseFloat(durationInput.value) || 1);
-                    const shadowsEnabled = enableShadowsSelect ? (enableShadowsSelect.value === 'true') : false;
-
-                    if (iframeWin && iframeWin.renderer) {
-                        iframeWin.renderer.shadowMap.enabled = shadowsEnabled;
-                        const mesh = findTargetMesh(iframeWin);
-                        const camera = iframeWin.camera;
-
-                        // Sinkronkan kedipan dan goyangan cahaya api saat preset aktif
-                        if (iframeWin.fireLight) {
-                            iframeWin.fireLight.castShadow = shadowsEnabled;
-                            const t = Date.now() * 0.015;
-                            const flicker = 3.2 + Math.sin(t * 2.5) * 0.6 + (Math.random() - 0.5) * 0.4;
-                            iframeWin.fireLight.intensity = Math.max(1.5, flicker);
-                            if (iframeWin.coreLight) iframeWin.coreLight.intensity = flicker * 0.6;
-                            
-                            const wx = Math.sin(t * 3.1) * 0.08 + (Math.random() - 0.5) * 0.4;
-                            const wy = 1.2 + Math.sin(t * 3.7) * 0.06;
-                            const wz = Math.cos(t * 2.9) * 0.08;
-                            iframeWin.fireLight.position.set(wx, wy, wz);
-                        }
-
-                        if (mesh && preset !== 'none') {
-                            iframeWin.customProgress = true;
-                            const now = (Date.now() / 1000) % durationSec;
-                            const progress = now / durationSec;
-
-                            if (preset === 'rotationY') {
-                                mesh.rotation.y = progress * (Math.PI * 2);
-                            } else if (preset === 'floating') {
-                                mesh.position.y = 2.0 + Math.sin(progress * Math.PI * 2) * 0.7;
-                                mesh.rotation.y = progress * (Math.PI * 2);
-                            } else if (preset === 'pulse') {
-                                const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.25;
-                                mesh.scale.set(scale, scale, scale);
-                            } else if (preset === 'turntable' && camera) {
-                                const radius = 7.2;
-                                const angle = progress * Math.PI * 2;
-                                camera.position.x = Math.sin(angle) * radius;
-                                camera.position.z = Math.cos(angle) * radius;
-                                camera.lookAt(0, 1.4, 0);
-                            }
-                        } else if (iframeWin.customProgress) {
-                            iframeWin.customProgress = false;
-                        }
-                    }
-                } catch(e) {}
-            }
-            requestAnimationFrame(livePreviewLoop);
-        }
-
-        animationPresetSelect.addEventListener('change', function() {
-            try {
-                const iframeWin = previewIframe.contentWindow;
-                if (iframeWin) {
-                    const mesh = findTargetMesh(iframeWin);
-                    if (mesh) {
-                        mesh.position.set(0, 2.0, 0);
-                        mesh.rotation.set(0, 0, 0);
-                        mesh.scale.set(1, 1, 1);
-                    }
-                    if (iframeWin.camera) {
-                        iframeWin.camera.position.set(0, 3.8, 7.2);
-                        iframeWin.camera.lookAt(0, 1.4, 0);
-                    }
-                }
-            } catch(e) {}
-        });
-
-        // Auto Keyword Generator berdasarkan preset & kode
-        autoTagBtn.addEventListener('click', function() {
-            const preset = animationPresetSelect.value;
-            const ratio = aspectRatioSelect.value;
-
-            let extraTags = ['3d', 'loop', 'animation', 'background', 'abstract', 'motion graphics', 'render', '4k', 'seamless'];
-
-            if (preset === 'rotationY') extraTags.push('rotation', '360 degree', 'turntable', 'spinning');
-            if (preset === 'floating') extraTags.push('floating', 'hovering', 'smooth motion', 'levitation');
-            if (preset === 'pulse') extraTags.push('pulsing', 'zooming', 'rhythm', 'scaling');
-            if (preset === 'turntable') extraTags.push('camera orbit', 'showcase', 'presentation');
-
-            if (ratio === '9:16') extraTags.push('vertical', 'tiktok background', 'shorts', 'reels', 'mobile');
-            if (ratio === '1:1') extraTags.push('square', 'instagram background');
-
-            const current = metaKeywords.value.split(',').map(s => s.trim()).filter(Boolean);
-            const combined = Array.from(new Set([...current, ...extraTags]));
-            metaKeywords.value = combined.join(', ');
-        });
-
-        // Dynamic CSV Exporter Function
-        function generateAndDownloadCSV(videoFileName) {
-            const formatVal = document.getElementById('format').value;
-            const fileExt = formatVal === 'png' ? '.zip' : (formatVal === 'mp4' ? '.mp4' : '.webm');
-            const fileName = videoFileName || ('render_' + resolutionSelect.value + '_' + durationInput.value + 's');
-            
-            const headers = ["Filename", "Title", "Description", "Keywords", "Categories", "Category 2", "Editorial", "Mature"];
-            
-            function cleanCSVValue(val) {
-                if (!val) return '""';
-                let stringVal = String(val).replace(/"/g, '""');
-                return '"' + stringVal + '"';
-            }
-
-            const row = [
-                cleanCSVValue(fileName + fileExt),
-                cleanCSVValue(metaTitle.value),
-                cleanCSVValue(metaDescription.value),
-                cleanCSVValue(metaKeywords.value),
-                cleanCSVValue(metaCategory1.value),
-                cleanCSVValue(metaCategory2.value),
-                cleanCSVValue(metaEditorial.value),
-                cleanCSVValue(metaMature.value)
-            ];
-
-            const csvContent = "\uFEFF" + headers.join(",") + "\n" + row.join(",");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            
-            const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.setAttribute('download', fileName + '_microstock_metadata.csv');
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            URL.revokeObjectURL(url);
-        }
-
-        downloadCsvBtn.addEventListener('click', function() {
-            generateAndDownloadCSV();
-        });
-
-        // Resolution options mapped by aspect ratio
-        const resolutionOptions = {
-            '16:9': [
-                { text: 'HD (720p) - 1280 x 720', value: '1280x720' },
-                { text: 'Full HD (1080p) - 1920 x 1080', value: '1920x1080' },
-                { text: '4K Ultra HD - 3840 x 2160', value: '3840x2160', selected: true },
-                { text: '8K Ultra HD - 7680 x 4320', value: '7680x4320' }
-            ],
-            '9:16': [
-                { text: 'HD Vertical (720p) - 720 x 1280', value: '720x1280' },
-                { text: 'Full HD Vertical (Shorts/Reels) - 1080 x 1920', value: '1080x1920', selected: true },
-                { text: '4K Vertical - 2160 x 3840', value: '2160x3840' }
-            ],
-            '1:1': [
-                { text: 'Square HD - 720 x 720', value: '720x720' },
-                { text: 'Square Full HD - 1080 x 1080', value: '1080x1080', selected: true },
-                { text: 'Square 2K - 2048 x 2048', value: '2048x2048' }
-            ]
-        };
-
-        function updateAspectRatioLayout() {
-            const ratio = aspectRatioSelect.value;
-            
-            iframeWrapper.className = "transition-all duration-300 max-w-full max-h-full flex items-center justify-center bg-black rounded-lg border border-gray-800 overflow-hidden shadow-2xl relative ";
-            
-            if (ratio === '16:9') {
-                iframeWrapper.classList.add('aspect-video', 'w-full');
-                viewportResolution.innerText = '16:9 Landscape';
-            } else if (ratio === '9:16') {
-                iframeWrapper.classList.add('aspect-[9/16]', 'h-full');
-                viewportResolution.innerText = '9:16 Portrait';
-            } else if (ratio === '1:1') {
-                iframeWrapper.classList.add('aspect-square', 'h-full');
-                viewportResolution.innerText = '1:1 Square';
-            }
-
-            resolutionSelect.innerHTML = '';
-            resolutionOptions[ratio].forEach(function(opt) {
-                const option = document.createElement('option');
-                option.value = opt.value;
-                option.textContent = opt.text;
-                if (opt.selected) option.selected = true;
-                resolutionSelect.appendChild(option);
-            });
-
-            setTimeout(function() {
-                if (previewIframe.contentWindow) {
-                    previewIframe.contentWindow.dispatchEvent(new Event('resize'));
-                }
-            }, 350);
-        }
-
-        aspectRatioSelect.addEventListener('change', updateAspectRatioLayout);
-
-        function updateTotalFrames() {
-            const dur = Math.max(0, parseFloat(durationInput.value) || 0);
-            const fps = parseInt(fpsInput.value) || 0;
-            const total = Math.floor(dur * fps);
-            totalFramesCalc.innerText = total + ' Frame';
-        }
-
-        durationInput.addEventListener('input', updateTotalFrames);
-        fpsInput.addEventListener('change', updateTotalFrames);
-        updateTotalFrames();
-
-        // Inisialisasi awal
-        codeEditor.value = defaultCode;
-        updateAspectRatioLayout();
-        updateIframeCode();
-        requestAnimationFrame(livePreviewLoop);
-
-        // Render System (Frame-by-Frame CCapture dengan Ekspor Otomatis Video & CSV)
-        renderBtn.addEventListener('click', function() {
-            isRendering = true;
-            const resVal = resolutionSelect.value.split('x');
-            const targetWidth = parseInt(resVal[0]);
-            const targetHeight = parseInt(resVal[1]);
-            const durationSec = Math.max(1, parseFloat(durationInput.value) || 1);
-            const fpsVal = parseInt(fpsInput.value);
-            const formatVal = document.getElementById('format').value;
-            const preset = animationPresetSelect.value;
-            const totalFrames = Math.floor(durationSec * fpsVal);
-
-            const iframeWin = previewIframe.contentWindow;
-            const iframeDoc = previewIframe.contentDocument;
-            const canvas = iframeDoc ? iframeDoc.querySelector('canvas') : null;
-
-            if (!canvas) {
-                renderStatusText.innerText = 'Error: Tidak ditemukan elemen <canvas> 3D di dalam kode!';
-                renderOverlay.classList.remove('hidden');
-                setTimeout(function() {
-                    renderOverlay.classList.add('hidden');
-                    isRendering = false;
-                }, 2500);
-                return;
-            }
-
-            renderOverlay.classList.remove('hidden');
-            progressBar.style.width = '0%';
-            renderPercent.innerText = '0%';
-            renderStatusText.innerText = 'Menyiapkan Canvas & CCapture...';
-
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            canvas.style.width = '100%';
-            canvas.style.height = '100%';
-
-            const shadowsEnabled = enableShadowsSelect ? (enableShadowsSelect.value === 'true') : false;
-
+'<!-- ... existing code ... -->
             // Set resolusi render WebGL canvas sesuai target dan atur shadow map sesuai setting
             if (iframeWin.renderer) {
+                iframeWin.renderer.setPixelRatio(1);
                 iframeWin.renderer.setSize(targetWidth, targetHeight, false);
                 iframeWin.renderer.shadowMap.enabled = shadowsEnabled;
                 iframeWin.renderer.shadowMap.needsUpdate = shadowsEnabled;
@@ -847,6 +406,7 @@
                 format: captureFormat,
                 framerate: fpsVal,
                 verbose: false,
+                quality: 100,
                 name: fileName
             });
 
