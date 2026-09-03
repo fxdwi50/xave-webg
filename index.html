@@ -167,7 +167,7 @@
                         </div>
                     </div>
 
-                    <!-- Format Output (Ditambahkan MP4) -->
+                    <!-- Format Output -->
                     <div>
                         <label class="text-xs font-medium text-gray-300 block mb-1.5">Format File Output</label>
                         <select id="format" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
@@ -276,7 +276,7 @@
                     <i data-lucide="info" class="w-3.5 h-3.5"></i> Microstock Ready:
                 </p>
                 <p class="text-[11px] leading-relaxed">
-                    Pilihan MP4 secara otomatis menyesuaikan nama file video dan baris file CSV metadata agar sesuai dengan nama file yang diunggah.
+                    Setiap proses render otomatis mengunduh file Video dan file CSV Metadata yang berisi informasi nama file yang selaras.
                 </p>
             </div>
         </section>
@@ -289,6 +289,9 @@
         const defaultCode = '<!DOCTYPE html>\n' +
 '<html>\n' +
 '<head>\n' +
+'    <meta name="title" content="3D Neon Cyber Cube Seamless Loop Animation">\n' +
+'    <meta name="description" content="Futuristic glowing 3d neon cyan cube rotating continuously in a seamless motion loop.">\n' +
+'    <meta name="keywords" content="cube, neon, cyan, futuristic, cyber, tech, geometry, 3d, loop">\n' +
 '    <style>\n' +
 '        body { margin: 0; overflow: hidden; background: #000; }\n' +
 '        canvas { width: 100vw; height: 100vh; display: block; }\n' +
@@ -386,7 +389,30 @@
             titleLength.innerText = metaTitle.value.length + '/120';
         }
         metaTitle.addEventListener('input', updateTitleLength);
-        updateTitleLength();
+
+        // Ekstraksi Otomatis Metadata Objek dari Kode HTML yang di-paste
+        function parseMetaFromCode() {
+            const code = codeEditor.value;
+            if (!code) return;
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(code, 'text/html');
+                
+                const titleMeta = doc.querySelector('meta[name="title"]')?.getAttribute('content') || doc.querySelector('title')?.innerText;
+                const descMeta = doc.querySelector('meta[name="description"]')?.getAttribute('content');
+                const keywordsMeta = doc.querySelector('meta[name="keywords"]')?.getAttribute('content');
+                const cat1Meta = doc.querySelector('meta[name="category1"]')?.getAttribute('content') || doc.querySelector('meta[name="category"]')?.getAttribute('content');
+                const cat2Meta = doc.querySelector('meta[name="category2"]')?.getAttribute('content');
+
+                if (titleMeta) metaTitle.value = titleMeta;
+                if (descMeta) metaDescription.value = descMeta;
+                if (keywordsMeta) metaKeywords.value = keywordsMeta;
+                if (cat1Meta) metaCategory1.value = cat1Meta;
+                if (cat2Meta) metaCategory2.value = cat2Meta;
+                
+                updateTitleLength();
+            } catch(e) {}
+        }
 
         // Auto Keyword Generator berdasarkan preset & kode
         autoTagBtn.addEventListener('click', function() {
@@ -408,13 +434,12 @@
             metaKeywords.value = combined.join(', ');
         });
 
-        // Dynamic CSV Exporter Function dengan dukungan ekstensi MP4/WebM/ZIP
+        // Dynamic CSV Exporter Function
         function generateAndDownloadCSV(videoFileName) {
             const formatVal = document.getElementById('format').value;
             const fileExt = formatVal === 'png' ? '.zip' : (formatVal === 'mp4' ? '.mp4' : '.webm');
             const fileName = videoFileName || ('render_' + resolutionSelect.value + '_' + durationInput.value + 's');
             
-            // Format Standard CSV Microstock Header
             const headers = ["Filename", "Title", "Description", "Keywords", "Categories", "Category 2", "Editorial", "Mature"];
             
             function cleanCSVValue(val) {
@@ -517,6 +542,7 @@
         updateTotalFrames();
 
         function updateIframeCode() {
+            parseMetaFromCode();
             const code = codeEditor.value;
             const blob = new Blob([code], { type: 'text/html' });
             previewIframe.src = URL.createObjectURL(blob);
@@ -529,6 +555,7 @@
         });
 
         // Inisialisasi awal
+        codeEditor.value = defaultCode;
         updateAspectRatioLayout();
         updateIframeCode();
 
@@ -594,7 +621,7 @@
 
         requestAnimationFrame(livePreviewLoop);
 
-        // Render System (Frame-by-Frame CCapture dengan Ekspor MP4 / WebM / ZIP)
+        // Render System (Frame-by-Frame CCapture dengan Ekspor Otomatis Video & CSV)
         renderBtn.addEventListener('click', function() {
             isRendering = true;
             const resVal = resolutionSelect.value.split('x');
@@ -682,36 +709,22 @@
 
                     iframeWin.requestAnimationFrame(captureLoop);
                 } else {
-                    renderStatusText.innerText = 'Selesai merekam! Mengompilasi file video MP4...';
+                    renderStatusText.innerText = 'Selesai merekam! Mengompilasi & mengunduh file video...';
                     capturer.stop();
+                    capturer.save();
 
-                    capturer.save(function(blob) {
-                        const fileExt = formatVal === 'png' ? '.zip' : (formatVal === 'mp4' ? '.mp4' : '.webm');
-                        const mimeType = formatVal === 'mp4' ? 'video/mp4' : (formatVal === 'png' ? 'application/zip' : 'video/webm');
-                        const customBlob = new Blob([blob], { type: mimeType });
-                        const url = URL.createObjectURL(customBlob);
-                        
-                        const downloadLink = document.createElement('a');
-                        downloadLink.href = url;
-                        downloadLink.download = fileName + fileExt;
-                        document.body.appendChild(downloadLink);
-                        downloadLink.click();
-                        document.body.removeChild(downloadLink);
-                        URL.revokeObjectURL(url);
-
-                        // Auto unduh file CSV jika opsi dicentang
-                        if (autoDownloadCsv.checked) {
-                            setTimeout(function() {
-                                generateAndDownloadCSV(fileName);
-                            }, 500);
-                        }
-
+                    // Auto unduh file CSV jika opsi dicentang
+                    if (autoDownloadCsv.checked) {
                         setTimeout(function() {
-                            renderOverlay.classList.add('hidden');
-                            isRendering = false;
-                            updateIframeCode();
-                        }, 1500);
-                    });
+                            generateAndDownloadCSV(fileName);
+                        }, 1200);
+                    }
+
+                    setTimeout(function() {
+                        renderOverlay.classList.add('hidden');
+                        isRendering = false;
+                        updateIframeCode();
+                    }, 2500);
                 }
             }
 
