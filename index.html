@@ -688,7 +688,14 @@
             canvas.style.width = '100%';
             canvas.style.height = '100%';
 
-            iframeWin.dispatchEvent(new Event('resize'));
+            // Set resolusi render WebGL canvas sesuai target (misal 1080p / 4K) dan atur matriks kamera
+            if (iframeWin.renderer) {
+                iframeWin.renderer.setSize(targetWidth, targetHeight, false);
+            }
+            if (iframeWin.camera) {
+                iframeWin.camera.aspect = targetWidth / targetHeight;
+                iframeWin.camera.updateProjectionMatrix();
+            }
 
             const fileName = 'render_' + targetWidth + 'x' + targetHeight + '_' + durationSec + 's';
             const captureFormat = (formatVal === 'mp4') ? 'webm' : formatVal;
@@ -728,6 +735,11 @@
                             camera.position.z = Math.cos(angle) * radius;
                             camera.lookAt(mesh.position);
                         }
+                    }
+
+                    // Paksa render WebGL frame terbaru sebelum ditangkap oleh CCapture
+                    if (iframeWin.renderer && iframeWin.scene && iframeWin.camera) {
+                        iframeWin.renderer.render(iframeWin.scene, iframeWin.camera);
                     }
 
                     capturer.capture(canvas);
