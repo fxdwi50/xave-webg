@@ -34,23 +34,24 @@
 </head>
 <body class="h-screen w-screen flex flex-col overflow-hidden">
 
-    <!-- Header Navigation -->
-    <header class="h-14 bg-gray-900 border-b border-gray-800 px-6 flex items-center justify-between shrink-0 z-20">
+    <!-- Header Navigation (Placed on top layer z-50 with high visibility) -->
+    <header class="h-14 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 px-6 flex items-center justify-between shrink-0 z-50 sticky top-0 shadow-lg">
         <div class="flex items-center space-x-3 shrink-0">
-            <div class="p-2 bg-blue-600 rounded-lg text-white">
+            <div class="p-2 bg-blue-600 rounded-lg text-white shadow-md shadow-blue-500/20">
                 <i data-lucide="clapperboard" class="w-5 h-5"></i>
             </div>
             <div>
                 <h1 class="text-base font-bold text-white tracking-wide flex items-center gap-2">
-                    WebG Studio <span class="bg-blue-900/60 text-blue-400 text-xs px-2 py-0.5 rounded border border-blue-700/50">4K Renderer</span>
+                    WebG Studio <span class="bg-blue-900/60 text-blue-400 text-xs px-2 py-0.5 rounded border border-blue-700/50 font-mono">4K Sharp Motion Engine</span>
                 </h1>
             </div>
         </div>
 
+        <!-- Render Button - Main Action on Top Layer -->
         <div class="flex items-center space-x-3 shrink-0">
-            <button id="renderBtn" class="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-medium text-xs py-2 px-4 rounded-lg transition flex items-center gap-2 shadow-lg shadow-blue-900/20">
-                <i data-lucide="video" class="w-4 h-4"></i>
-                <span>Render Video</span>
+            <button id="renderBtn" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-semibold text-xs py-2.5 px-5 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30 border border-blue-400/30 cursor-pointer">
+                <i data-lucide="video" class="w-4 h-4 animate-pulse"></i>
+                <span class="tracking-wide uppercase">Render Video (HD - 4K)</span>
             </button>
         </div>
     </header>
@@ -288,7 +289,89 @@
     </div>
 
     <script>
-        lucide.createIcons();
+        // Sample Default HTML Code with High-Precision Antialiasing & Deterministic Frame Motion
+        const defaultCode = '<!DOCTYPE html>\n' +
+'<html>\n' +
+'<head>\n' +
+'    <title>3D Cinematic Flame Loop</title>\n' +
+'    <meta name="title" content="3D Cinematic Glowing Flame Loop Animation">\n' +
+'    <meta name="description" content="Cinematic sharp 3D glowing fire simulation with crisp motion capture.">\n' +
+'    <meta name="keywords" content="3d fire, crisp render, flame loop, motion graphics, 4k 60fps">\n' +
+'    <style>\n' +
+'        body { margin: 0; overflow: hidden; background: #000000; }\n' +
+'        canvas { width: 100vw; height: 100vh; display: block; image-rendering: -webkit-optimize-contrast; }\n' +
+'    </style>\n' +
+'    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><' + '/script>\n' +
+'</head>\n' +
+'<body>\n' +
+'    <script>\n' +
+'\n' +
+'        window.scene = new THREE.Scene();\n' +
+'        window.scene.background = new THREE.Color(0x000000);\n' +
+'\n' +
+'        window.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);\n' +
+'        window.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });\n' +
+'        window.renderer.setSize(window.innerWidth, window.innerHeight);\n' +
+'        window.renderer.setPixelRatio(1);\n' +
+'        window.renderer.toneMapping = THREE.ACESFilmicToneMapping;\n' +
+'        window.renderer.toneMappingExposure = 1.1;\n' +
+'        document.body.appendChild(window.renderer.domElement);\n' +
+'\n' +
+'        const ambientLight = new THREE.AmbientLight(0x111111, 0.3);\n' +
+'        window.scene.add(ambientLight);\n' +
+'\n' +
+'        const fireLight = new THREE.PointLight(0xff6b1a, 4.5, 25, 1.8);\n' +
+'        fireLight.position.set(0, 1.2, 0);\n' +
+'        window.scene.add(fireLight);\n' +
+'        window.fireLight = fireLight;\n' +
+'\n' +
+'        const flameGeo = new THREE.ConeGeometry(0.5, 1.8, 32, 32);\n' +
+'        flameGeo.translate(0, 0.9, 0);\n' +
+'        const flameMat = new THREE.MeshBasicMaterial({\n' +
+'            color: 0xff4500,\n' +
+'            transparent: true,\n' +
+'            opacity: 0.85,\n' +
+'            blending: THREE.AdditiveBlending,\n' +
+'            depthWrite: false,\n' +
+'            dithering: true,\n' +
+'            side: THREE.DoubleSide\n' +
+'        });\n' +
+'        const flameMesh = new THREE.Mesh(flameGeo, flameMat);\n' +
+'        window.scene.add(flameMesh);\n' +
+'        window.targetMesh = flameMesh;\n' +
+'\n' +
+'        const innerFlameGeo = new THREE.ConeGeometry(0.3, 1.2, 32);\n' +
+'        innerFlameGeo.translate(0, 0.6, 0);\n' +
+'        const innerFlameMat = new THREE.MeshBasicMaterial({\n' +
+'            color: 0xffd700,\n' +
+'            transparent: true,\n' +
+'            opacity: 0.95,\n' +
+'            blending: THREE.AdditiveBlending,\n' +
+'            dithering: true,\n' +
+'            depthWrite: false\n' +
+'        });\n' +
+'        const innerFlame = new THREE.Mesh(innerFlameGeo, innerFlameMat);\n' +
+'        flameMesh.add(innerFlame);\n' +
+'\n' +
+'        window.camera.position.set(0, 1.2, 3.8);\n' +
+'        window.camera.lookAt(0, 0.9, 0);\n' +
+'\n' +
+'        // Dynamic Clock or Frame-Stepped Animation Loop\n' +
+'        function animate() {\n' +
+'            requestAnimationFrame(animate);\n' +
+'            if (!window.customProgress) {\n' +
+'                const time = window.deterministicTime !== undefined ? window.deterministicTime : (Date.now() * 0.002);\n' +
+'                flameMesh.rotation.y = time % (Math.PI * 2);\n' +
+'                flameMesh.scale.x = 1 + Math.sin(time * 3) * 0.05;\n' +
+'                flameMesh.scale.z = 1 + Math.cos(time * 3) * 0.05;\n' +
+'            }\n' +
+'            window.renderer.render(window.scene, window.camera);\n' +
+'        }\n' +
+'        animate();\n' +
+'    <' + '/script>\n' +
+'</body>\n' +
+'</html>';
+
 
         // Sample Default HTML Code with Realistic Fire Flame & Clean High-Contrast Shadow Simulation
         const defaultCode = '<!DOCTYPE html>\n' +
@@ -462,6 +545,139 @@
                     capturer.save();
 
                     // Auto unduh file CSV jika opsi dicentang
+                    if (autoDownloadCsv.checked) {
+                        setTimeout(function() {
+                            generateAndDownloadCSV(fileName);
+                        }, 1200);
+                    }
+
+                    setTimeout(function() {
+                        renderOverlay.classList.add('hidden');
+                        isRendering = false;
+                        updateIframeCode();
+                    }, 2500);
+                }
+            }
+
+            captureLoop();
+        });
+    </script>
+</body>
+</html>
+        // Render System (High Precision Sharp Motion Frame Capture)
+        renderBtn.addEventListener('click', function() {
+            isRendering = true;
+            const resVal = resolutionSelect.value.split('x');
+            const targetWidth = parseInt(resVal[0]);
+            const targetHeight = parseInt(resVal[1]);
+            const durationSec = Math.max(1, parseFloat(durationInput.value) || 1);
+            const fpsVal = parseInt(fpsInput.value);
+            const formatVal = document.getElementById('format').value;
+            const preset = animationPresetSelect.value;
+            const shadowsEnabled = (document.getElementById('enableShadows')?.value === 'true');
+            const totalFrames = Math.floor(durationSec * fpsVal);
+
+            const iframeWin = previewIframe.contentWindow;
+            const iframeDoc = previewIframe.contentDocument;
+            const canvas = iframeDoc ? iframeDoc.querySelector('canvas') : null;
+
+            if (!canvas) {
+                renderStatusText.innerText = 'Error: Tidak ditemukan elemen <canvas> 3D di dalam kode!';
+                renderOverlay.classList.remove('hidden');
+                setTimeout(function() {
+                    renderOverlay.classList.add('hidden');
+                    isRendering = false;
+                }, 2500);
+                return;
+            }
+
+            renderOverlay.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            renderPercent.innerText = '0%';
+            renderStatusText.innerText = 'Menyiapkan Canvas & CCapture...';
+
+            // Ensure exact 1:1 pixel rendering for crisp HD-4K output without pixelation
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+
+            if (iframeWin.renderer) {
+                iframeWin.renderer.setPixelRatio(1);
+                iframeWin.renderer.setSize(targetWidth, targetHeight, false);
+                iframeWin.renderer.shadowMap.enabled = shadowsEnabled;
+                if (shadowsEnabled) iframeWin.renderer.shadowMap.needsUpdate = true;
+            }
+            if (iframeWin.camera) {
+                iframeWin.camera.aspect = targetWidth / targetHeight;
+                iframeWin.camera.updateProjectionMatrix();
+            }
+
+            const fileName = 'render_' + targetWidth + 'x' + targetHeight + '_' + durationSec + 's';
+            const captureFormat = (formatVal === 'mp4') ? 'webm' : formatVal;
+
+            const capturer = new CCapture({
+                format: captureFormat,
+                framerate: fpsVal,
+                verbose: false,
+                quality: 100,
+                name: fileName
+            });
+
+            let currentFrame = 0;
+            capturer.start();
+
+            function captureLoop() {
+                if (currentFrame < totalFrames) {
+                    const progress = currentFrame / totalFrames;
+                    const timeInSeconds = currentFrame / fpsVal;
+
+                    // Inject deterministic step time into iframe window for sharp frame interpolation
+                    iframeWin.deterministicTime = timeInSeconds;
+                    iframeWin.deterministicProgress = progress;
+
+                    const mesh = findTargetMesh(iframeWin);
+                    const camera = iframeWin.camera;
+
+                    if (mesh && preset !== 'none') {
+                        iframeWin.customProgress = true;
+                        
+                        if (preset === 'rotationY') {
+                            mesh.rotation.y = progress * (Math.PI * 2);
+                        } else if (preset === 'floating') {
+                            mesh.position.y = 0.9 + Math.sin(progress * Math.PI * 2) * 0.4;
+                            mesh.rotation.y = progress * (Math.PI * 2);
+                        } else if (preset === 'pulse') {
+                            const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.25;
+                            mesh.scale.set(scale, scale, scale);
+                        } else if (preset === 'turntable' && camera) {
+                            const radius = 4.2;
+                            const angle = progress * Math.PI * 2;
+                            camera.position.x = Math.sin(angle) * radius;
+                            camera.position.z = Math.cos(angle) * radius;
+                            camera.lookAt(0, 0.9, 0);
+                        }
+                    }
+
+                    // Force high precision WebGL draw for current exact frame
+                    if (iframeWin.renderer && iframeWin.scene && iframeWin.camera) {
+                        iframeWin.renderer.render(iframeWin.scene, iframeWin.camera);
+                    }
+
+                    capturer.capture(canvas);
+                    currentFrame++;
+
+                    const percent = Math.round((currentFrame / totalFrames) * 100);
+                    progressBar.style.width = percent + '%';
+                    renderPercent.innerText = percent + '%';
+                    renderStatusText.innerText = 'Merekam Frame ' + currentFrame + ' dari ' + totalFrames + ' (' + targetWidth + 'x' + targetHeight + ')...';
+
+                    iframeWin.requestAnimationFrame(captureLoop);
+                } else {
+                    renderStatusText.innerText = 'Selesai merekam! Mengompilasi & mengunduh file video...';
+                    capturer.stop();
+                    capturer.save();
+
                     if (autoDownloadCsv.checked) {
                         setTimeout(function() {
                             generateAndDownloadCSV(fileName);
