@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebG - Universal 3D Code to 4K Video Studio</title>
+    <title>WebG Studio - 3D Code to 4K Video Exporter</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- CCapture.js untuk merekam Canvas WebGL frame-by-frame -->
     <script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
     <style>
@@ -34,7 +36,7 @@
 </head>
 <body class="h-screen w-screen flex flex-col overflow-hidden">
 
-    <!-- Header Navigation (Placed on top layer z-50 with high visibility) -->
+    <!-- Header Navigation -->
     <header class="h-14 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 px-6 flex items-center justify-between shrink-0 z-50 sticky top-0 shadow-lg">
         <div class="flex items-center space-x-3 shrink-0">
             <div class="p-2 bg-blue-600 rounded-lg text-white shadow-md shadow-blue-500/20">
@@ -51,7 +53,7 @@
         <div class="flex items-center space-x-3 shrink-0">
             <button id="renderBtn" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-semibold text-xs py-2.5 px-5 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30 border border-blue-400/30 cursor-pointer">
                 <i data-lucide="video" class="w-4 h-4 animate-pulse"></i>
-                <span class="tracking-wide uppercase">Render Video (HD - 4K)</span>
+                <span class="tracking-wide uppercase">Render Video (HD - 4K MP4)</span>
             </button>
         </div>
     </header>
@@ -65,7 +67,7 @@
                 <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <i data-lucide="code-2" class="w-4 h-4 text-blue-400"></i> Code Editor (HTML / Three.js)
                 </span>
-                <button id="resetCodeBtn" class="text-xs text-gray-400 hover:text-white flex items-center gap-1">
+                <button id="resetCodeBtn" class="text-xs text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer">
                     <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset Default
                 </button>
             </div>
@@ -75,16 +77,19 @@
         <!-- Column 2: Interactive Preview Window -->
         <section class="flex-grow bg-black flex flex-col relative overflow-hidden">
             <div class="p-2 bg-gray-900/80 border-b border-gray-800 flex items-center justify-between text-xs text-gray-400 px-4 absolute top-0 left-0 right-0 z-10 backdrop-blur-sm">
-                <span class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live Viewport Preview
-                </span>
-                <span id="viewportResolution" class="text-gray-500 font-mono">16:9 Landscape</span>
+                <div class="flex items-center gap-2">
+                    <span id="webglStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-ping"></span> Memuat Engine 3D...
+                    </span>
+                    <span class="text-gray-400">Live Viewport Preview</span>
+                </div>
+                <span id="viewportResolution" class="text-gray-500 font-mono">16:9 Aspect Ratio</span>
             </div>
 
             <!-- Frame Container (Dynamic Aspect Ratio Box) -->
             <div class="w-full h-full flex items-center justify-center p-6 pt-12">
                 <div id="iframeWrapper" class="transition-all duration-300 max-w-full max-h-full flex items-center justify-center bg-black rounded-lg border border-gray-800 overflow-hidden shadow-2xl relative aspect-video w-full">
-                    <iframe id="previewIframe" class="w-full h-full border-none bg-black"></iframe>
+                    <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin allow-modals allow-downloads" class="w-full h-full border-none bg-black"></iframe>
                 </div>
             </div>
 
@@ -104,7 +109,7 @@
             </div>
         </section>
 
-        <!-- Column 3: Render & Settings -->
+        <!-- Column 3: Render & Settings Panel -->
         <section class="w-full md:w-80 bg-gray-900 border-l border-gray-800 p-5 flex flex-col justify-between shrink-0 overflow-y-auto">
             <div class="space-y-5">
                 <!-- Tab Controls for Settings & Microstock Metadata -->
@@ -119,7 +124,7 @@
 
                 <!-- Section Panel 1: Video Settings -->
                 <div id="panelSettings" class="space-y-4">
-                    <!-- Pilihan Aspek Rasio (Ukuran Video) -->
+                    <!-- Pilihan Aspek Rasio -->
                     <div>
                         <label class="text-xs font-medium text-gray-300 block mb-1.5">Aspek Rasio / Ukuran Layout</label>
                         <select id="aspectRatio" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
@@ -145,7 +150,7 @@
                     <div>
                         <label class="text-xs font-medium text-gray-300 block mb-1.5">Efek Bayangan (Shadows)</label>
                         <select id="enableShadows" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="false" selected>Matikan Bayangan (Disable)</option>
+                            <option value="false" selected>Matikan Bayangan (Disable - Hasil Lebih Bersih)</option>
                             <option value="true">Aktifkan Bayangan (Enable)</option>
                         </select>
                     </div>
@@ -154,7 +159,7 @@
                     <div>
                         <label class="text-xs font-medium text-gray-300 block mb-1.5">Resolusi Video Target</label>
                         <select id="resolution" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <!-- Pilihan resolusi terisi otomatis via JS sesuai Aspek Rasio -->
+                            <!-- Populated dynamically -->
                         </select>
                     </div>
 
@@ -162,7 +167,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-xs font-medium text-gray-300 block mb-1.5">Durasi (Detik)</label>
-                            <input type="number" id="duration" value="10" min="1" max="300" step="1" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono" placeholder="Ketik detik...">
+                            <input type="number" id="duration" value="10" min="1" max="300" step="1" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
                         </div>
                         <div>
                             <label class="text-xs font-medium text-gray-300 block mb-1.5">Frame Rate (FPS)</label>
@@ -173,13 +178,23 @@
                         </div>
                     </div>
 
+                    <!-- Ketajaman / Skala Objek Kecil (Micro Detail Scale) -->
+                    <div>
+                        <label class="text-xs font-medium text-gray-300 block mb-1.5">Presisi Objek Kecil & Partikel</label>
+                        <select id="particleScale" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="1.0" selected>Tajam Standar (100% Micro Detail)</option>
+                            <option value="1.5">Ultra Sharp / Ekstra Tebal (150%)</option>
+                            <option value="0.7">Sangat Halus / Sub-Piksel (70%)</option>
+                        </select>
+                    </div>
+
                     <!-- Format Output -->
                     <div>
                         <label class="text-xs font-medium text-gray-300 block mb-1.5">Format File Output</label>
                         <select id="format" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                             <option value="mp4" selected>MP4 Video (.mp4)</option>
                             <option value="webm">WebM Video (.webm)</option>
-                            <option value="png">PNG Image Sequence (.zip)</option>
+                            <option value="png">PNG Image Sequence (.zip - Lossless)</option>
                         </select>
                     </div>
 
@@ -194,33 +209,29 @@
 
                 <!-- Section Panel 2: Microstock Metadata Settings -->
                 <div id="panelMetadata" class="space-y-4 hidden">
-                    <!-- Title Microstock -->
                     <div>
                         <div class="flex justify-between items-center mb-1">
                             <label class="text-xs font-medium text-gray-300">Judul Video (Title)</label>
-                            <span class="text-[10px] text-gray-500 font-mono" id="titleLength">0/120</span>
+                            <span class="text-[10px] text-gray-500 font-mono" id="titleLength">59/120</span>
                         </div>
-                        <input type="text" id="metaTitle" maxlength="120" value="3D Seamless Abstract Geometric Loop Animation Background" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Masukkan judul deskriptif (min. 5 kata)...">
+                        <input type="text" id="metaTitle" maxlength="120" value="3D Planet Earth & Ultra Sharp Starfield Seamless Motion Loop" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
-                    <!-- Description -->
                     <div>
                         <label class="text-xs font-medium text-gray-300 block mb-1.5">Deskripsi Lengkap</label>
-                        <textarea id="metaDescription" rows="3" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none leading-relaxed" placeholder="Deskripsi rinci mengenai konsep, warna, dan pergerakan objek 3D...">High quality 4K 3D animated video featuring a seamless looping geometric object rotation. Ideal for tech presentations, motion graphics, overlays, and futuristic digital background screens.</textarea>
+                        <textarea id="metaDescription" rows="3" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none leading-relaxed">High resolution 4K 3D animation of planet Earth rotating gracefully in space with atmosphere glowing glow and sharp starfield dots background.</textarea>
                     </div>
 
-                    <!-- Keywords (Tags) -->
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <label class="text-xs font-medium text-gray-300">Kata Kunci / Keywords (Pisah Komma)</label>
-                            <button id="autoTagBtn" class="text-[10px] text-blue-400 hover:underline flex items-center gap-1">
+                            <label class="text-xs font-medium text-gray-300">Kata Kunci / Keywords</label>
+                            <button id="autoTagBtn" class="text-[10px] text-blue-400 hover:underline flex items-center gap-1 cursor-pointer">
                                 <i data-lucide="sparkles" class="w-3 h-3"></i> Auto Tag
                             </button>
                         </div>
-                        <textarea id="metaKeywords" rows="3" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono text-[11px]" placeholder="3d, loop, animation, abstract, futuristic, geometric, motion graphics...">3d, loop, animation, background, abstract, geometric, motion graphics, 4k, render, tech, futuristic, seamless, rotation, cyber, cyan, presentation, video overlay</textarea>
+                        <textarea id="metaKeywords" rows="3" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono text-[11px]">earth, globe, planet, space, stars, starfield, 3d, loop, background, 4k, orbit, galaxy, science, glowing, atmosphere, ultra hd</textarea>
                     </div>
 
-                    <!-- Categories & License Type -->
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-xs font-medium text-gray-300 block mb-1">Kategori Utama</label>
@@ -228,22 +239,19 @@
                                 <option value="Backgrounds/Textures" selected>Backgrounds</option>
                                 <option value="Technology">Technology</option>
                                 <option value="Abstract">Abstract</option>
-                                <option value="Arts/Entertainment">Arts</option>
                                 <option value="Science">Science</option>
                             </select>
                         </div>
                         <div>
                             <label class="text-xs font-medium text-gray-300 block mb-1">Kategori Kedua</label>
                             <select id="metaCategory2" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                <option value="Technology" selected>Technology</option>
-                                <option value="Science">Science</option>
+                                <option value="Science" selected>Science</option>
+                                <option value="Technology">Technology</option>
                                 <option value="Abstract">Abstract</option>
-                                <option value="Industrial">Industrial</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Editorial / Commercial & Release Options -->
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div>
                             <label class="text-[11px] font-medium text-gray-300 block mb-1">Tipe Lisensi</label>
@@ -261,7 +269,6 @@
                         </div>
                     </div>
 
-                    <!-- Checkbox Otomatis CSV saat Render -->
                     <div class="pt-2">
                         <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
                             <input type="checkbox" id="autoDownloadCsv" checked class="rounded border-gray-700 text-blue-600 focus:ring-blue-500 h-4 w-4 bg-gray-800">
@@ -269,8 +276,7 @@
                         </label>
                     </div>
 
-                    <!-- Manual CSV Export Button -->
-                    <button id="downloadCsvBtn" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs py-2 px-3 rounded-lg transition flex items-center justify-center gap-2 mt-2 shadow">
+                    <button id="downloadCsvBtn" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs py-2 px-3 rounded-lg transition flex items-center justify-center gap-2 mt-2 shadow cursor-pointer">
                         <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
                         <span>Unduh Metadata (.CSV) Sekarang</span>
                     </button>
@@ -279,294 +285,694 @@
 
             <div class="p-3 bg-blue-950/20 border border-blue-900/30 rounded-lg text-xs text-blue-300/80 space-y-1 mt-4">
                 <p class="font-semibold text-blue-400 flex items-center gap-1">
-                    <i data-lucide="info" class="w-3.5 h-3.5"></i> Tips Kualitas Render Bebas Pixelated:
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i> Standalone Video Exporter:
                 </p>
                 <p class="text-[11px] leading-relaxed">
-                    Gunakan <code class="bg-blue-900/50 px-1 rounded text-emerald-300">dithering: true</code> pada material Three.js untuk menghaluskan gradasi glow. Pilih format <code class="bg-blue-900/50 px-1 rounded text-emerald-300">PNG Sequence (.zip)</code> untuk hasil 100% Lossless untuk Microstock.
+                    Setiap ekspor MP4 atau WebM dikirim langsung ke browser parent untuk diunduh secara instan tanpa terhalang isolasi iframe.
                 </p>
             </div>
         </section>
     </div>
 
     <script>
-        // Sample Default HTML Code with High-Precision Antialiasing & Deterministic Frame Motion
-        const defaultCode = '<!DOCTYPE html>\n' +
-'<html>\n' +
-'<head>\n' +
-'    <title>3D Cinematic Flame Loop</title>\n' +
-'    <meta name="title" content="3D Cinematic Glowing Flame Loop Animation">\n' +
-'    <meta name="description" content="Cinematic sharp 3D glowing fire simulation with crisp motion capture.">\n' +
-'    <meta name="keywords" content="3d fire, crisp render, flame loop, motion graphics, 4k 60fps">\n' +
-'    <style>\n' +
-'        body { margin: 0; overflow: hidden; background: #000000; }\n' +
-'        canvas { width: 100vw; height: 100vh; display: block; image-rendering: -webkit-optimize-contrast; }\n' +
-'    </style>\n' +
-'    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><' + '/script>\n' +
-'</head>\n' +
-'<body>\n' +
-'    <script>\n' +
-'\n' +
-'        window.scene = new THREE.Scene();\n' +
-'        window.scene.background = new THREE.Color(0x000000);\n' +
-'\n' +
-'        window.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);\n' +
-'        window.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });\n' +
-'        window.renderer.setSize(window.innerWidth, window.innerHeight);\n' +
-'        window.renderer.setPixelRatio(1);\n' +
-'        window.renderer.toneMapping = THREE.ACESFilmicToneMapping;\n' +
-'        window.renderer.toneMappingExposure = 1.1;\n' +
-'        document.body.appendChild(window.renderer.domElement);\n' +
-'\n' +
-'        const ambientLight = new THREE.AmbientLight(0x111111, 0.3);\n' +
-'        window.scene.add(ambientLight);\n' +
-'\n' +
-'        const fireLight = new THREE.PointLight(0xff6b1a, 4.5, 25, 1.8);\n' +
-'        fireLight.position.set(0, 1.2, 0);\n' +
-'        window.scene.add(fireLight);\n' +
-'        window.fireLight = fireLight;\n' +
-'\n' +
-'        const flameGeo = new THREE.ConeGeometry(0.5, 1.8, 32, 32);\n' +
-'        flameGeo.translate(0, 0.9, 0);\n' +
-'        const flameMat = new THREE.MeshBasicMaterial({\n' +
-'            color: 0xff4500,\n' +
-'            transparent: true,\n' +
-'            opacity: 0.85,\n' +
-'            blending: THREE.AdditiveBlending,\n' +
-'            depthWrite: false,\n' +
-'            dithering: true,\n' +
-'            side: THREE.DoubleSide\n' +
-'        });\n' +
-'        const flameMesh = new THREE.Mesh(flameGeo, flameMat);\n' +
-'        window.scene.add(flameMesh);\n' +
-'        window.targetMesh = flameMesh;\n' +
-'\n' +
-'        const innerFlameGeo = new THREE.ConeGeometry(0.3, 1.2, 32);\n' +
-'        innerFlameGeo.translate(0, 0.6, 0);\n' +
-'        const innerFlameMat = new THREE.MeshBasicMaterial({\n' +
-'            color: 0xffd700,\n' +
-'            transparent: true,\n' +
-'            opacity: 0.95,\n' +
-'            blending: THREE.AdditiveBlending,\n' +
-'            dithering: true,\n' +
-'            depthWrite: false\n' +
-'        });\n' +
-'        const innerFlame = new THREE.Mesh(innerFlameGeo, innerFlameMat);\n' +
-'        flameMesh.add(innerFlame);\n' +
-'\n' +
-'        window.camera.position.set(0, 1.2, 3.8);\n' +
-'        window.camera.lookAt(0, 0.9, 0);\n' +
-'\n' +
-'        // Dynamic Clock or Frame-Stepped Animation Loop\n' +
-'        function animate() {\n' +
-'            requestAnimationFrame(animate);\n' +
-'            if (!window.customProgress) {\n' +
-'                const time = window.deterministicTime !== undefined ? window.deterministicTime : (Date.now() * 0.002);\n' +
-'                flameMesh.rotation.y = time % (Math.PI * 2);\n' +
-'                flameMesh.scale.x = 1 + Math.sin(time * 3) * 0.05;\n' +
-'                flameMesh.scale.z = 1 + Math.cos(time * 3) * 0.05;\n' +
-'            }\n' +
-'            window.renderer.render(window.scene, window.camera);\n' +
-'        }\n' +
-'        animate();\n' +
-'    <' + '/script>\n' +
-'</body>\n' +
-'</html>';
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
 
+        // High Precision Ultra-Sharp Earth & Fresnel Atmosphere Template
+        const defaultCode = `<!DOCTYPE html>
+<html>
+<head>
+    <title>3D Earth & Ultra-Sharp Starfield</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000000; }
+        canvas { width: 100vw; height: 100vh; display: block; image-rendering: high-quality; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+    <script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"><\/script>
+</head>
+<body>
+    <script>
+        window.isRendering = false;
+        window.customProgress = false;
+        window.deterministicTime = 0;
 
-        // Sample Default HTML Code with Realistic Fire Flame & Clean High-Contrast Shadow Simulation
-        const defaultCode = '<!DOCTYPE html>\n' +
-'<html>\n' +
-'<head>\n' +
-'    <title>3D Cinematic Glowing Fire Loop</title>\n' +
-'    <meta name="title" content="3D Cinematic Glowing Fire Light Loop Animation">\n' +
-'    <meta name="description" content="Cinematic 3D glowing fire light simulation with additive bloom transparency.">\n' +
-'    <meta name="keywords" content="glow effect, additive flame, dynamic flickering, 3d fire, cinematic lighting, flame animation, motion graphics, 4k loop">\n' +
-'    <style>\n' +
-'        body { margin: 0; overflow: hidden; background: #000000; }\n' +
-'        canvas { width: 100vw; height: 100vh; display: block; }\n' +
-'    </style>\n' +
-'    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><' + '/script>\n' +
-'</head>\n' +
-'<body>\n' +
-'    <script>\n' +
-'        // 1. Inisialisasi Scene, Kamera, & WebGL Renderer\n' +
-'        window.scene = new THREE.Scene();\n' +
-'        window.scene.background = new THREE.Color(0x000000);\n' +
-'\n' +
-'        window.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);\n' +
-'        window.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });\n' +
-'        window.renderer.setSize(window.innerWidth, window.innerHeight);\n' +
-'        window.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));\n' +
-'        window.renderer.toneMapping = THREE.ACESFilmicToneMapping;\n' +
-'        window.renderer.toneMappingExposure = 1.2;\n' +
-'        window.renderer.shadowMap.enabled = false;\n' +
-'        document.body.appendChild(window.renderer.domElement);\n' +
-'\n' +
-'        // 2. Pencahayaan Sekitar\n' +
-'        const ambientLight = new THREE.AmbientLight(0x111111, 0.2);\n' +
-'        window.scene.add(ambientLight);\n' +
-'\n' +
-'        const moonLight = new THREE.DirectionalLight(0x334155, 0.3);\n' +
-'        moonLight.position.set(-5, 8, -5);\n' +
-'        window.scene.add(moonLight);\n' +
-'\n' +
-'        // 3. Sumber Cahaya Utama Api\n' +
-'        const fireLight = new THREE.PointLight(0xff6b1a, 4.5, 25, 1.8);\n' +
-'        fireLight.position.set(0, 1.2, 0);\n' +
-'        fireLight.castShadow = false;\n' +
-'        window.scene.add(fireLight);\n' +
-'        window.fireLight = fireLight;\n' +
-'\n' +
-'        const coreLight = new THREE.PointLight(0xffea78, 2.5, 12);\n' +
-'        coreLight.position.set(0, 1.0, 0);\n' +
-'        window.scene.add(coreLight);\n' +
-'        window.coreLight = coreLight;\n' +
-'\n' +
-'        // 4. Objek Visual Kobaran Api dengan Additive Blending & Dithering (Mencegah Banding/Pixelated)\n' +
-'        const flameGeo = new THREE.ConeGeometry(0.5, 1.8, 24, 24);\n' +
-'        flameGeo.translate(0, 0.9, 0);\n' +
-'        const flameMat = new THREE.MeshBasicMaterial({\n' +
-'            color: 0xff4500,\n' +
-'            transparent: true,\n' +
-'            opacity: 0.85,\n' +
-'            blending: THREE.AdditiveBlending,\n' +
-'            depthWrite: false,\n' +
-'            dithering: true,\n' +
-'            side: THREE.DoubleSide\n' +
-'        });\n' +
-'        const flameMesh = new THREE.Mesh(flameGeo, flameMat);\n' +
-'        flameMesh.position.set(0, 0, 0);\n' +
-'        window.scene.add(flameMesh);\n' +
-'\n' +
-'        const innerFlameGeo = new THREE.ConeGeometry(0.3, 1.2, 24);\n' +
-'        innerFlameGeo.translate(0, 0.6, 0);\n' +
-'        const innerFlameMat = new THREE.MeshBasicMaterial({\n' +
-'            color: 0xffd700,\n' +
-'            transparent: true,\n' +
-'            opacity: 0.9,\n' +
-'            blending: THREE.AdditiveBlending,\n' +
-'            dithering: true,\n' +
-'            depthWrite: false\n' +
-'        });\n' +
-'        const innerFlame = new THREE.Mesh(innerFlameGeo, innerFlameMat);\n' +
-'        flameMesh.add(innerFlame);\n' +
-'\n' +
-'        // Lapisan Pendaran Cahaya Tambahan (Outer Glow Halo)\n' +
-'        const glowSphereGeo = new THREE.SphereGeometry(1.1, 32, 32);\n' +
-'        const glowSphereMat = new THREE.MeshBasicMaterial({\n' +
-'            color: 0xff3300,\n' +
-'            transparent: true,\n' +
-'            opacity: 0.35,\n' +
-'            blending: THREE.AdditiveBlending,\n' +
-'            dithering: true,\n' +
-'            depthWrite: false,\n' +
-'            side: THREE.BackSide\n' +
-'        });\n' +
-'        const glowHalo = new THREE.Mesh(glowSphereGeo, glowSphereMat);\n' +
-'        glowHalo.position.set(0, 1.2, 0);\n' +
-'        window.scene.add(glowHalo);\n' +
-'        window.glowHalo = glowHalo;\n' +
-'<!-- ... existing code ... -->
-            // Set resolusi render WebGL canvas sesuai target dan atur shadow map sesuai setting
-            if (iframeWin.renderer) {
-                iframeWin.renderer.setPixelRatio(1);
-                iframeWin.renderer.setSize(targetWidth, targetHeight, false);
-                iframeWin.renderer.shadowMap.enabled = shadowsEnabled;
-                iframeWin.renderer.shadowMap.needsUpdate = shadowsEnabled;
+        // Membuat tekstur bintang halus bersinar (Micro-Glow Dot)
+        function createStarTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            grad.addColorStop(0.15, 'rgba(230, 245, 255, 0.9)');
+            grad.addColorStop(0.4, 'rgba(100, 160, 255, 0.3)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            return tex;
+        }
+
+        function initApp() {
+            if (typeof THREE === "undefined") {
+                setTimeout(initApp, 50);
+                return;
             }
-            if (iframeWin.fireLight) {
-                iframeWin.fireLight.castShadow = shadowsEnabled;
-            }
-            if (iframeWin.camera) {
-                iframeWin.camera.aspect = targetWidth / targetHeight;
-                iframeWin.camera.updateProjectionMatrix();
-            }
+            window.scene = new THREE.Scene();
+            window.scene.background = new THREE.Color(0x010206);
 
-            const fileName = 'render_' + targetWidth + 'x' + targetHeight + '_' + durationSec + 's';
-            const captureFormat = (formatVal === 'mp4') ? 'webm' : formatVal;
+            window.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            window.renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                preserveDrawingBuffer: true, 
+                powerPreference: "high-performance" 
+            });
+            window.renderer.setSize(window.innerWidth, window.innerHeight);
+            window.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            window.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            window.renderer.toneMappingExposure = 1.2;
+            document.body.appendChild(window.renderer.domElement);
 
-            const capturer = new CCapture({
-                format: captureFormat,
-                framerate: fpsVal,
-                verbose: false,
-                quality: 100,
-                name: fileName
+            // Pencahayaan Utama
+            const sunLight = new THREE.DirectionalLight(0xffffff, 2.2);
+            sunLight.position.set(5, 3, 5);
+            window.scene.add(sunLight);
+
+            const ambientLight = new THREE.AmbientLight(0x0d1527, 0.7);
+            window.scene.add(ambientLight);
+
+            // Group Utama Bumi
+            const earthGroup = new THREE.Group();
+            window.scene.add(earthGroup);
+            window.targetMesh = earthGroup;
+
+            // Globe Earth Mesh Utama
+            const earthGeo = new THREE.SphereGeometry(1.2, 128, 128);
+            const earthMat = new THREE.MeshStandardMaterial({
+                color: 0x113826,
+                roughness: 0.5,
+                metalness: 0.1,
+                dithering: true
             });
 
-            let currentFrame = 0;
-            capturer.start();
+            // Tekstur Peta Daratan & Samudra
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a1d37';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#1b4332';
+            for (let i = 0; i < 350; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const r = 30 + Math.random() * 120;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            const mapTexture = new THREE.CanvasTexture(canvas);
+            earthMat.map = mapTexture;
 
-            function captureLoop() {
-                if (currentFrame < totalFrames) {
-                    const progress = currentFrame / totalFrames;
+            const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+            earthGroup.add(earthMesh);
 
-                    const mesh = findTargetMesh(iframeWin);
-                    const camera = iframeWin.camera;
+            // Atmosphere Fresnel Shader (Ultra Smooth Gradient - Anti-Pixelated)
+            const atmosVertexShader = \`
+                varying vec3 vNormal;
+                varying vec3 vPosition;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            \`;
 
-                    if (mesh && preset !== 'none') {
-                        iframeWin.customProgress = true;
-                        
-                        if (preset === 'rotationY') {
-                            mesh.rotation.y = progress * (Math.PI * 2);
-                        } else if (preset === 'floating') {
-                            mesh.position.y = 2.0 + Math.sin(progress * Math.PI * 2) * 0.7;
-                            mesh.rotation.y = progress * (Math.PI * 2);
-                        } else if (preset === 'pulse') {
-                            const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.25;
-                            mesh.scale.set(scale, scale, scale);
-                        } else if (preset === 'turntable' && camera) {
-                            const radius = 7.2;
-                            const angle = progress * Math.PI * 2;
-                            camera.position.x = Math.sin(angle) * radius;
-                            camera.position.z = Math.cos(angle) * radius;
-                            camera.lookAt(0, 1.4, 0);
+            const atmosFragmentShader = \`
+                varying vec3 vNormal;
+                varying vec3 vPosition;
+                void main() {
+                    vec3 viewDir = normalize(-vPosition);
+                    float intensity = pow(0.68 - dot(vNormal, viewDir), 2.8);
+                    gl_FragColor = vec4(0.25, 0.55, 1.0, 1.0) * intensity;
+                }
+            \`;
+
+            const atmosGeo = new THREE.SphereGeometry(1.26, 128, 128);
+            const atmosMat = new THREE.ShaderMaterial({
+                vertexShader: atmosVertexShader,
+                fragmentShader: atmosFragmentShader,
+                blending: THREE.AdditiveBlending,
+                side: THREE.BackSide,
+                transparent: true,
+                depthWrite: false
+            });
+            const atmosMesh = new THREE.Mesh(atmosGeo, atmosMat);
+            earthGroup.add(atmosMesh);
+
+            // Ultra Sharp Starfield (Ukuran Titik Mikro Presisi - Size 0.035)
+            const starCount = 2500;
+            const starGeo = new THREE.BufferGeometry();
+            const starPositions = new Float32Array(starCount * 3);
+
+            for (let i = 0; i < starCount; i++) {
+                const r = 18 + Math.random() * 40;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+
+                starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+                starPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+                starPositions[i * 3 + 2] = r * Math.cos(phi);
+            }
+
+            starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+
+            const starTexture = createStarTexture();
+            const starMat = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.035, // Presisi Mikro (Mencegah Kotak Besar)
+                map: starTexture,
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            const starField = new THREE.Points(starGeo, starMat);
+            window.scene.add(starField);
+
+            // Sabuk Partikel/Debu Mikro Mengelilingi Planet (Simulasi Objek-Objek Kecil)
+            const dustCount = 1200;
+            const dustGeo = new THREE.BufferGeometry();
+            const dustPositions = new Float32Array(dustCount * 3);
+            for (let i = 0; i < dustCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 1.6 + Math.random() * 0.8;
+                dustPositions[i * 3] = Math.cos(angle) * dist;
+                dustPositions[i * 3 + 1] = (Math.random() - 0.5) * 0.25;
+                dustPositions[i * 3 + 2] = Math.sin(angle) * dist;
+            }
+            dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+            const dustMat = new THREE.PointsMaterial({
+                color: 0x88ccff,
+                size: 0.02,
+                transparent: true,
+                opacity: 0.75,
+                blending: THREE.AdditiveBlending
+            });
+            const dustRing = new THREE.Points(dustGeo, dustMat);
+            earthGroup.add(dustRing);
+            window.dustRing = dustRing;
+
+            window.camera.position.set(0, 0.4, 3.8);
+            window.camera.lookAt(0, 0, 0);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                if (window.isRendering) return;
+                
+                const time = (window.deterministicTime > 0) ? window.deterministicTime : (Date.now() * 0.001);
+                if (!window.customProgress) {
+                    earthGroup.rotation.y = time * 0.3;
+                    starField.rotation.y = time * 0.03;
+                    dustRing.rotation.y = time * 0.15;
+                }
+                window.renderer.render(window.scene, window.camera);
+            }
+            animate();
+
+            window.addEventListener("resize", () => {
+                if (window.camera && window.renderer) {
+                    window.camera.aspect = window.innerWidth / window.innerHeight;
+                    window.camera.updateProjectionMatrix();
+                    window.renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            });
+        }
+
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+            initApp();
+        } else {
+            window.addEventListener("DOMContentLoaded", initApp);
+        }
+    <\/script>
+</body>
+</html>`;
+
+        const codeEditor = document.getElementById('codeEditor');
+        const previewIframe = document.getElementById('previewIframe');
+        const iframeWrapper = document.getElementById('iframeWrapper');
+        const resetCodeBtn = document.getElementById('resetCodeBtn');
+        const renderBtn = document.getElementById('renderBtn');
+        const renderOverlay = document.getElementById('renderOverlay');
+        const progressBar = document.getElementById('progressBar');
+        const renderPercent = document.getElementById('renderPercent');
+        const renderStatusText = document.getElementById('renderStatusText');
+        const webglStatusBadge = document.getElementById('webglStatusBadge');
+
+        const aspectRatioSelect = document.getElementById('aspectRatio');
+        const animationPresetSelect = document.getElementById('animationPreset');
+        const enableShadowsSelect = document.getElementById('enableShadows');
+        const resolutionSelect = document.getElementById('resolution');
+        const durationInput = document.getElementById('duration');
+        const fpsInput = document.getElementById('fps');
+        const totalFramesCalc = document.getElementById('totalFramesCalc');
+        const viewportResolution = document.getElementById('viewportResolution');
+
+        const tabSettingsBtn = document.getElementById('tabSettingsBtn');
+        const tabMetadataBtn = document.getElementById('tabMetadataBtn');
+        const panelSettings = document.getElementById('panelSettings');
+        const panelMetadata = document.getElementById('panelMetadata');
+
+        const metaTitle = document.getElementById('metaTitle');
+        const titleLength = document.getElementById('titleLength');
+        const metaDescription = document.getElementById('metaDescription');
+        const metaKeywords = document.getElementById('metaKeywords');
+        const autoTagBtn = document.getElementById('autoTagBtn');
+        const autoDownloadCsv = document.getElementById('autoDownloadCsv');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+
+        let isRendering = false;
+        let isWebGLReady = false;
+
+        codeEditor.value = defaultCode;
+
+        function updateTotalFrames() {
+            const dur = Math.max(1, parseFloat(durationInput.value) || 1);
+            const fps = parseInt(fpsInput.value) || 60;
+            totalFramesCalc.innerText = Math.floor(dur * fps) + ' Frame';
+        }
+        durationInput.addEventListener('input', updateTotalFrames);
+        fpsInput.addEventListener('change', updateTotalFrames);
+
+        function updateResolutionOptions() {
+            const ratio = aspectRatioSelect.value;
+            resolutionSelect.innerHTML = '';
+            let options = [];
+
+            if (ratio === '16:9') {
+                options = [
+                    { label: '4K Ultra HD (3840 x 2160)', value: '3840x2160' },
+                    { label: '2K Quad HD (2560 x 1440)', value: '2560x1440' },
+                    { label: 'Full HD (1920 x 1080)', value: '1920x1080', selected: true },
+                    { label: 'HD (1280 x 720)', value: '1280x720' }
+                ];
+                iframeWrapper.style.aspectRatio = '16/9';
+            } else if (ratio === '9:16') {
+                options = [
+                    { label: '4K Vertical (2160 x 3840)', value: '2160x3840' },
+                    { label: '2K Vertical (1440 x 2560)', value: '1440x2560' },
+                    { label: 'Full HD Vertical (1080 x 1920)', value: '1080x1920', selected: true },
+                    { label: 'HD Vertical (720 x 1280)', value: '720x1280' }
+                ];
+                iframeWrapper.style.aspectRatio = '9/16';
+            } else if (ratio === '1:1') {
+                options = [
+                    { label: '4K Square (2160 x 2160)', value: '2160x2160' },
+                    { label: 'Full HD Square (1080 x 1080)', value: '1080x1080', selected: true },
+                    { label: 'HD Square (720 x 720)', value: '720x720' }
+                ];
+                iframeWrapper.style.aspectRatio = '1/1';
+            }
+
+            options.forEach(opt => {
+                const el = document.createElement('option');
+                el.value = opt.value;
+                el.textContent = opt.label;
+                if (opt.selected) el.selected = true;
+                resolutionSelect.appendChild(el);
+            });
+            viewportResolution.innerText = ratio + ' Aspect Ratio';
+        }
+
+        aspectRatioSelect.addEventListener('change', updateResolutionOptions);
+        updateResolutionOptions();
+
+        function prepareCodeForPreview(userCode) {
+            let code = userCode;
+            
+            if (!code.includes('preserveDrawingBuffer')) {
+                code = code.replace(/new\s+THREE\.WebGLRenderer\s*\(\s*\{/g, 'new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, ');
+            }
+
+            const bridgeScript = `
+    <script>
+        (function() {
+            let readyInterval = setInterval(function() {
+                try {
+                    window.parent.postMessage({ type: 'WEBGL_READY' }, '*');
+                } catch(e){}
+            }, 400);
+
+            window.addEventListener('message', function(event) {
+                const data = event.data;
+                if (!data || !data.type) return;
+
+                if (data.type === 'CHECK_READY') {
+                    window.parent.postMessage({ type: 'WEBGL_READY' }, '*');
+                } else if (data.type === 'START_RENDER') {
+                    clearInterval(readyInterval);
+                    executeRenderProcess(data.config);
+                }
+            });
+
+            async function executeRenderProcess(config) {
+                const { targetWidth, targetHeight, durationSec, fpsVal, formatVal, preset, shadowsEnabled, particleScaleMult, fileName } = config;
+                const totalFrames = Math.floor(durationSec * fpsVal);
+                const win = window;
+                win.isRendering = true;
+
+                if (win.renderer) {
+                    win.renderer.setPixelRatio(1);
+                    win.renderer.setSize(targetWidth, targetHeight, false);
+                    if (win.renderer.shadowMap) {
+                        win.renderer.shadowMap.enabled = shadowsEnabled;
+                    }
+                }
+
+                // Otomatisasi skala ukuran partikel/objek kecil saat merender resolusi tinggi
+                if (win.scene) {
+                    const resScaleFactor = (targetWidth / 1920) * (particleScaleMult || 1.0);
+                    win.scene.traverse(function(obj) {
+                        if (obj.isPoints && obj.material) {
+                            if (!obj.material.userData) obj.material.userData = {};
+                            if (!obj.material.userData.baseSize) obj.material.userData.baseSize = obj.material.size || 0.03;
+                            obj.material.size = obj.material.userData.baseSize * resScaleFactor;
+                            obj.material.needsUpdate = true;
                         }
+                    });
+                }
+
+                if (win.camera) {
+                    win.camera.aspect = targetWidth / targetHeight;
+                    win.camera.updateProjectionMatrix();
+                }
+
+                const canvas = document.querySelector('canvas');
+                if (!canvas) {
+                    win.parent.postMessage({ type: 'RENDER_ERROR', message: 'Canvas elemen tidak ditemukan.' }, '*');
+                    win.isRendering = false;
+                    return;
+                }
+
+                if (typeof CCapture === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js';
+                    document.head.appendChild(script);
+                    await new Promise(r => script.onload = r);
+                }
+
+                const captureFormat = (formatVal === 'mp4') ? 'webm' : formatVal;
+                const capturer = new CCapture({
+                    format: captureFormat,
+                    framerate: fpsVal,
+                    verbose: false,
+                    quality: 100,
+                    name: fileName
+                });
+
+                let currentFrame = 0;
+                capturer.start();
+
+                function captureStep() {
+                    if (currentFrame < totalFrames) {
+                        const progress = currentFrame / totalFrames;
+                        const timeInSeconds = currentFrame / fpsVal;
+
+                        win.deterministicTime = timeInSeconds;
+                        
+                        let mesh = win.targetMesh;
+                        if (!mesh && win.scene) {
+                            win.scene.traverse(function(obj) {
+                                if (!mesh && (obj.isMesh || obj.isGroup) && obj.children.length >= 0) mesh = obj;
+                            });
+                        }
+                        const camera = win.camera;
+
+                        if (mesh && preset !== 'none') {
+                            win.customProgress = true;
+                            if (preset === 'rotationY') {
+                                mesh.rotation.y = progress * (Math.PI * 2);
+                            } else if (preset === 'floating') {
+                                mesh.position.y = Math.sin(progress * Math.PI * 2) * 0.2;
+                                mesh.rotation.y = progress * (Math.PI * 2);
+                            } else if (preset === 'pulse') {
+                                const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.15;
+                                mesh.scale.set(scale, scale, scale);
+                            } else if (preset === 'turntable' && camera) {
+                                const radius = 3.8;
+                                const angle = progress * Math.PI * 2;
+                                camera.position.x = Math.sin(angle) * radius;
+                                camera.position.z = Math.cos(angle) * radius;
+                                camera.lookAt(0, 0, 0);
+                            }
+                        }
+
+                        if (win.renderer && win.scene && win.camera) {
+                            win.renderer.render(win.scene, win.camera);
+                        }
+
+                        capturer.capture(canvas);
+                        currentFrame++;
+
+                        const percent = Math.round((currentFrame / totalFrames) * 100);
+                        win.parent.postMessage({
+                            type: 'RENDER_PROGRESS',
+                            currentFrame: currentFrame,
+                            totalFrames: totalFrames,
+                            percent: percent,
+                            targetWidth: targetWidth,
+                            targetHeight: targetHeight
+                        }, '*');
+
+                        setTimeout(captureStep, 1000 / (fpsVal * 2));
+                    } else {
+                        win.parent.postMessage({ type: 'RENDER_COMPILING' }, '*');
+                        capturer.stop();
+
+                        capturer.save(function(blob) {
+                            win.isRendering = false;
+                            if (win.renderer) win.renderer.setSize(window.innerWidth, window.innerHeight);
+                            if (win.camera) {
+                                win.camera.aspect = window.innerWidth / window.innerHeight;
+                                win.camera.updateProjectionMatrix();
+                            }
+                            win.parent.postMessage({ 
+                                type: 'RENDER_COMPLETE', 
+                                fileName: fileName, 
+                                formatVal: formatVal,
+                                blob: blob 
+                            }, '*');
+                        });
+                    }
+                }
+                captureStep();
+            }
+        })();
+    <\/script>
+            `;
+
+            if (code.includes('</body>')) {
+                return code.replace('</body>', bridgeScript + '\n</body>');
+            } else {
+                return code + bridgeScript;
+            }
+        }
+
+        function updateIframeCode() {
+            if (isRendering) return;
+            isWebGLReady = false;
+            
+            webglStatusBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex items-center gap-1";
+            webglStatusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-ping"></span> Memuat Engine 3D...`;
+
+            const rawCode = codeEditor.value;
+            const finalCode = prepareCodeForPreview(rawCode);
+            previewIframe.srcdoc = finalCode;
+        }
+
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (!data || !data.type) return;
+
+            if (data.type === 'WEBGL_READY') {
+                isWebGLReady = true;
+                webglStatusBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1";
+                webglStatusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> WebGL Ready`;
+            } else if (data.type === 'RENDER_PROGRESS') {
+                const percent = data.percent || 0;
+                progressBar.style.width = percent + '%';
+                renderPercent.innerText = percent + '%';
+                renderStatusText.innerText = `Merekam Frame ${data.currentFrame} dari ${data.totalFrames} (${data.targetWidth}x${data.targetHeight})...`;
+            } else if (data.type === 'RENDER_COMPILING') {
+                renderStatusText.innerText = 'Mengompilasi video... Menyiapkan unduhan MP4/Video...';
+            } else if (data.type === 'RENDER_COMPLETE') {
+                // Parent-Level Download Trigger
+                if (data.blob) {
+                    const format = data.formatVal || 'mp4';
+                    let ext = format;
+                    let mimeType = 'video/mp4';
+
+                    if (format === 'mp4') {
+                        ext = 'mp4';
+                        mimeType = 'video/mp4';
+                    } else if (format === 'webm') {
+                        ext = 'webm';
+                        mimeType = 'video/webm';
+                    } else if (format === 'png') {
+                        ext = 'zip';
+                        mimeType = 'application/zip';
                     }
 
-                    // Sinkronisasi status bayangan dan render frame terbaru
-                    if (iframeWin.renderer && iframeWin.scene && iframeWin.camera) {
-                        iframeWin.renderer.shadowMap.enabled = shadowsEnabled;
-                        iframeWin.renderer.shadowMap.needsUpdate = shadowsEnabled;
-                        iframeWin.renderer.render(iframeWin.scene, iframeWin.camera);
+                    const videoBlob = new Blob([data.blob], { type: mimeType });
+                    const downloadUrl = URL.createObjectURL(videoBlob);
+                    const link = document.createElement('a');
+                    link.style.display = 'none';
+                    link.href = downloadUrl;
+                    link.download = `${data.fileName || 'render_export'}.${ext}`;
+                    document.body.appendChild(link);
+                    link.click();
+
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(downloadUrl);
+                    }, 10000);
+                }
+
+                if (autoDownloadCsv.checked) {
+                    setTimeout(() => {
+                        generateAndDownloadCSV(data.fileName || 'render_export');
+                    }, 1200);
+                }
+                setTimeout(() => {
+                    renderOverlay.classList.add('hidden');
+                    isRendering = false;
+                    updateIframeCode();
+                }, 2000);
+            } else if (data.type === 'RENDER_ERROR') {
+                renderStatusText.innerText = `Error: ${data.message || 'Gagal merender'}`;
+                setTimeout(() => {
+                    renderOverlay.classList.add('hidden');
+                    isRendering = false;
+                }, 3000);
+            }
+        });
+
+        let debounceTimer;
+        codeEditor.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateIframeCode, 400);
+        });
+
+        resetCodeBtn.addEventListener('click', () => {
+            codeEditor.value = defaultCode;
+            updateIframeCode();
+        });
+
+        // Tab Switching Controls
+        tabSettingsBtn.addEventListener('click', () => {
+            panelSettings.classList.remove('hidden');
+            panelMetadata.classList.add('hidden');
+            tabSettingsBtn.className = "flex-1 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500 flex items-center justify-center gap-1.5 transition";
+            tabMetadataBtn.className = "flex-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 transition";
+        });
+
+        tabMetadataBtn.addEventListener('click', () => {
+            panelMetadata.classList.remove('hidden');
+            panelSettings.classList.add('hidden');
+            tabMetadataBtn.className = "flex-1 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500 flex items-center justify-center gap-1.5 transition";
+            tabSettingsBtn.className = "flex-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 transition";
+        });
+
+        metaTitle.addEventListener('input', function() {
+            titleLength.innerText = `${this.value.length}/120`;
+        });
+
+        autoTagBtn.addEventListener('click', () => {
+            const keywordsList = ["earth", "globe", "planet", "space", "stars", "starfield", "3d", "loop", "background", "4k", "orbit", "galaxy", "science", "glowing", "atmosphere", "ultra hd"];
+            metaKeywords.value = Array.from(new Set(keywordsList)).join(', ');
+        });
+
+        // CSV Exporter Helper
+        function generateAndDownloadCSV(filenamePrefix) {
+            const title = metaTitle.value || '3D Animation Loop';
+            const description = metaDescription.value || '';
+            const keywords = metaKeywords.value || '';
+            const cat1 = document.getElementById('metaCategory1').value || 'Backgrounds/Textures';
+            const cat2 = document.getElementById('metaCategory2').value || 'Science';
+            const editorial = document.getElementById('metaEditorial').value || 'No';
+            const mature = document.getElementById('metaMature').value || 'No';
+
+            const headers = ["Filename", "Title", "Description", "Keywords", "Category 1", "Category 2", "Editorial", "Mature"];
+            const row = [
+                `"${filenamePrefix}.mp4"`,
+                `"${title.replace(/"/g, '""')}"`,
+                `"${description.replace(/"/g, '""')}"`,
+                `"${keywords.replace(/"/g, '""')}"`,
+                `"${cat1}"`,
+                `"${cat2}"`,
+                `"${editorial}"`,
+                `"${mature}"`
+            ];
+
+            const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + row.join(",");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${filenamePrefix}_metadata.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        downloadCsvBtn.addEventListener('click', () => {
+            generateAndDownloadCSV('render_export');
+        });
+
+        renderBtn.addEventListener('click', async () => {
+            if (isRendering) return;
+
+            if (!isWebGLReady) {
+                if (previewIframe.contentWindow) {
+                    previewIframe.contentWindow.postMessage({ type: 'CHECK_READY' }, '*');
+                }
+
+                renderOverlay.classList.remove('hidden');
+                progressBar.style.width = '10%';
+                renderPercent.innerText = 'WAIT';
+                renderStatusText.innerText = 'Menunggu WebGL Engine Siap...';
+
+                let retries = 0;
+                while (retries < 25 && !isWebGLReady) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    if (previewIframe.contentWindow) {
+                        previewIframe.contentWindow.postMessage({ type: 'CHECK_READY' }, '*');
                     }
+                    retries++;
+                }
 
-                    capturer.capture(canvas);
-                    currentFrame++;
-
-                    const percent = Math.round((currentFrame / totalFrames) * 100);
-                    progressBar.style.width = percent + '%';
-                    renderPercent.innerText = percent + '%';
-                    renderStatusText.innerText = 'Merekam Frame ' + currentFrame + ' dari ' + totalFrames + ' (' + durationSec + 's)...';
-
-                    iframeWin.requestAnimationFrame(captureLoop);
-                } else {
-                    renderStatusText.innerText = 'Selesai merekam! Mengompilasi & mengunduh file video...';
-                    capturer.stop();
-                    capturer.save();
-
-                    // Auto unduh file CSV jika opsi dicentang
-                    if (autoDownloadCsv.checked) {
-                        setTimeout(function() {
-                            generateAndDownloadCSV(fileName);
-                        }, 1200);
-                    }
-
-                    setTimeout(function() {
+                if (!isWebGLReady) {
+                    renderStatusText.innerText = 'WebGL belum merespons. Memuat ulang preview...';
+                    updateIframeCode();
+                    setTimeout(() => {
                         renderOverlay.classList.add('hidden');
-                        isRendering = false;
-                        updateIframeCode();
                     }, 2500);
+                    return;
                 }
             }
 
-            captureLoop();
-        });
-    </script>
-</body>
-</html>
-        // Render System (High Precision Sharp Motion Frame Capture)
-        renderBtn.addEventListener('click', function() {
             isRendering = true;
+            renderOverlay.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            renderPercent.innerText = '0%';
+            renderStatusText.innerText = 'Menyiapkan WebGL Engine untuk Perekaman Presisi...';
+
             const resVal = resolutionSelect.value.split('x');
             const targetWidth = parseInt(resVal[0]);
             const targetHeight = parseInt(resVal[1]);
@@ -574,126 +980,30 @@
             const fpsVal = parseInt(fpsInput.value);
             const formatVal = document.getElementById('format').value;
             const preset = animationPresetSelect.value;
-            const shadowsEnabled = (document.getElementById('enableShadows')?.value === 'true');
-            const totalFrames = Math.floor(durationSec * fpsVal);
-
-            const iframeWin = previewIframe.contentWindow;
-            const iframeDoc = previewIframe.contentDocument;
-            const canvas = iframeDoc ? iframeDoc.querySelector('canvas') : null;
-
-            if (!canvas) {
-                renderStatusText.innerText = 'Error: Tidak ditemukan elemen <canvas> 3D di dalam kode!';
-                renderOverlay.classList.remove('hidden');
-                setTimeout(function() {
-                    renderOverlay.classList.add('hidden');
-                    isRendering = false;
-                }, 2500);
-                return;
-            }
-
-            renderOverlay.classList.remove('hidden');
-            progressBar.style.width = '0%';
-            renderPercent.innerText = '0%';
-            renderStatusText.innerText = 'Menyiapkan Canvas & CCapture...';
-
-            // Ensure exact 1:1 pixel rendering for crisp HD-4K output without pixelation
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            canvas.style.width = '100%';
-            canvas.style.height = '100%';
-
-            if (iframeWin.renderer) {
-                iframeWin.renderer.setPixelRatio(1);
-                iframeWin.renderer.setSize(targetWidth, targetHeight, false);
-                iframeWin.renderer.shadowMap.enabled = shadowsEnabled;
-                if (shadowsEnabled) iframeWin.renderer.shadowMap.needsUpdate = true;
-            }
-            if (iframeWin.camera) {
-                iframeWin.camera.aspect = targetWidth / targetHeight;
-                iframeWin.camera.updateProjectionMatrix();
-            }
-
+            const shadowsEnabled = (enableShadowsSelect.value === 'true');
+            const particleScaleMult = parseFloat(document.getElementById('particleScale').value) || 1.0;
             const fileName = 'render_' + targetWidth + 'x' + targetHeight + '_' + durationSec + 's';
-            const captureFormat = (formatVal === 'mp4') ? 'webm' : formatVal;
 
-            const capturer = new CCapture({
-                format: captureFormat,
-                framerate: fpsVal,
-                verbose: false,
-                quality: 100,
-                name: fileName
-            });
-
-            let currentFrame = 0;
-            capturer.start();
-
-            function captureLoop() {
-                if (currentFrame < totalFrames) {
-                    const progress = currentFrame / totalFrames;
-                    const timeInSeconds = currentFrame / fpsVal;
-
-                    // Inject deterministic step time into iframe window for sharp frame interpolation
-                    iframeWin.deterministicTime = timeInSeconds;
-                    iframeWin.deterministicProgress = progress;
-
-                    const mesh = findTargetMesh(iframeWin);
-                    const camera = iframeWin.camera;
-
-                    if (mesh && preset !== 'none') {
-                        iframeWin.customProgress = true;
-                        
-                        if (preset === 'rotationY') {
-                            mesh.rotation.y = progress * (Math.PI * 2);
-                        } else if (preset === 'floating') {
-                            mesh.position.y = 0.9 + Math.sin(progress * Math.PI * 2) * 0.4;
-                            mesh.rotation.y = progress * (Math.PI * 2);
-                        } else if (preset === 'pulse') {
-                            const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.25;
-                            mesh.scale.set(scale, scale, scale);
-                        } else if (preset === 'turntable' && camera) {
-                            const radius = 4.2;
-                            const angle = progress * Math.PI * 2;
-                            camera.position.x = Math.sin(angle) * radius;
-                            camera.position.z = Math.cos(angle) * radius;
-                            camera.lookAt(0, 0.9, 0);
-                        }
-                    }
-
-                    // Force high precision WebGL draw for current exact frame
-                    if (iframeWin.renderer && iframeWin.scene && iframeWin.camera) {
-                        iframeWin.renderer.render(iframeWin.scene, iframeWin.camera);
-                    }
-
-                    capturer.capture(canvas);
-                    currentFrame++;
-
-                    const percent = Math.round((currentFrame / totalFrames) * 100);
-                    progressBar.style.width = percent + '%';
-                    renderPercent.innerText = percent + '%';
-                    renderStatusText.innerText = 'Merekam Frame ' + currentFrame + ' dari ' + totalFrames + ' (' + targetWidth + 'x' + targetHeight + ')...';
-
-                    iframeWin.requestAnimationFrame(captureLoop);
-                } else {
-                    renderStatusText.innerText = 'Selesai merekam! Mengompilasi & mengunduh file video...';
-                    capturer.stop();
-                    capturer.save();
-
-                    if (autoDownloadCsv.checked) {
-                        setTimeout(function() {
-                            generateAndDownloadCSV(fileName);
-                        }, 1200);
-                    }
-
-                    setTimeout(function() {
-                        renderOverlay.classList.add('hidden');
-                        isRendering = false;
-                        updateIframeCode();
-                    }, 2500);
+            previewIframe.contentWindow.postMessage({
+                type: 'START_RENDER',
+                config: {
+                    targetWidth,
+                    targetHeight,
+                    durationSec,
+                    fpsVal,
+                    formatVal,
+                    preset,
+                    shadowsEnabled,
+                    particleScaleMult,
+                    fileName
                 }
-            }
-
-            captureLoop();
+            }, '*');
         });
+
+        // Initialize preview on load
+        window.onload = () => {
+            updateIframeCode();
+        };
     </script>
 </body>
 </html>
